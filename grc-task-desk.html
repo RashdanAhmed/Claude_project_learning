@@ -88,7 +88,7 @@ h1 { margin: 0; font-family: var(--f-display); font-weight: 600; font-size: 34px
 .top-actions input[type="search"] { width: 250px; max-width: 100%; }
 .sync { display: inline-flex; align-items: center; gap: 6px; font-family: var(--f-mono); font-size: 12px; color: var(--muted); margin-right: 4px; }
 .sync::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: var(--line-strong); }
-.sync[data-state="synced"]::before { background: var(--ok); }
+.sync[data-state="synced"]::before, .sync[data-state="browser"]::before { background: var(--ok); }
 .sync[data-state="saving"]::before { background: var(--accent); }
 .sync[data-state="local"]::before, .sync[data-state="error"]::before { background: var(--warn); }
 
@@ -541,8 +541,10 @@ fieldset { margin: 0; padding: 0; border: 0; min-width: 0; }
   };
   if (!CATS[ui.cat]) ui.cat = "";
 
-  /* Store: the db capability keeps tasks; without it the page runs in this tab only. */
-  let db = null, ro = false, mode = "connecting", pending = 0, lastDay = today();
+  /* Store: the db capability keeps tasks on claude.ai. A copy opened straight from disk
+     (no window.claude) keeps them in this browser's localStorage. Inside a claude.ai view
+     without db, the page runs in this tab only. */
+  let db = null, ro = false, mode = "connecting", pending = 0, lastDay = today(), localBlocked = false;
   const tasks = new Map();
   const queues = {};
 
@@ -584,7 +586,7 @@ fieldset { margin: 0; padding: 0; border: 0; min-width: 0; }
     if (ro) return;
     tasks.set(id, norm(id, body));
     render();
-    if (!db) return;
+    if (!db) { persistLocal(); return; }
     const ref = db.collection("tasks").doc(id);
     track(id, () => ref.set(body));
   }
@@ -592,9 +594,26 @@ fieldset { margin: 0; padding: 0; border: 0; min-width: 0; }
     if (ro) return;
     tasks.delete(id);
     render();
-    if (!db) return;
+    if (!db) { persistLocal(); return; }
     const ref = db.collection("tasks").doc(id);
     track(id, () => ref.delete());
+  }
+  function loadLocal() {
+    try { localStorage.setItem("grc-desk:probe", "1"); localStorage.removeItem("grc-desk:probe"); } catch (e) { localBlocked = true; }
+    tasks.clear();
+    const saved = prefs.get("tasks", {});
+    if (saved && typeof saved === "object") {
+      for (const [id, b] of Object.entries(saved)) if (b && typeof b === "object") tasks.set(id, norm(id, b));
+    }
+  }
+  function persistLocal() {
+    if (mode !== "browser") return;
+    const all = {};
+    for (const t of tasks.values()) all[t.id] = clean(t);
+    try { localStorage.setItem("grc-desk:tasks", JSON.stringify(all)); localBlocked = false; }
+    catch (e) { localBlocked = true; }
+    renderNotices();
+    renderSync();
   }
   function onWriteError(e) {
     const code = e && e.code;
@@ -612,7 +631,7 @@ fieldset { margin: 0; padding: 0; border: 0; min-width: 0; }
 
   async function boot() {
     const c = window.claude;
-    if (!c || typeof c.use !== "function") { mode = "local"; render(); return; }
+    if (!c || typeof c.use !== "function") { mode = "browser"; loadLocal(); render(); return; }
     let d = null, u = null;
     try { [d, u] = await Promise.all([c.use("db"), c.use("user")]); } catch (e) { /* treated as absent */ }
     if (u) { try { if (await u.can("data.write") === false) ro = true; } catch (e) { /* keep controls */ } }
@@ -778,13 +797,15 @@ fieldset { margin: 0; padding: 0; border: 0; min-width: 0; }
     const el = $("#sync");
     let state = mode, text;
     if (pending > 0 && db) { state = "saving"; text = "Saving…"; }
-    else text = { connecting: "Connecting…", synced: ro ? "View only" : "All changes saved", local: "Not saved in this view", error: "Sync stopped, reload to reconnect" }[mode] || "";
+    else if (mode === "browser" && localBlocked) { state = "local"; text = "Not saved in this browser"; }
+    else text = { connecting: "Connecting…", synced: ro ? "View only" : "All changes saved", browser: "Saved in this browser", local: "Not saved in this view", error: "Sync stopped, reload to reconnect" }[mode] || "";
     el.dataset.state = state;
     el.textContent = text;
   }
   function renderNotices() {
     const out = [];
     if (mode === "local") out.push(`<div class="notice warn"><p>Changes stay in this tab only. Open this page on claude.ai while signed in to save your tasks.</p></div>`);
+    if (mode === "browser" && localBlocked) out.push(`<div class="notice warn"><p>This browser is blocking storage for this file, so changes are lost when you close the tab. Open the page through a local web server instead, as described in the README.</p></div>`);
     if (ro && db) out.push(`<div class="notice"><p>You can read this task list but not change it.</p></div>`);
     const starters = [...tasks.values()].filter(t => t.starter).length;
     if (starters && !ro) {
@@ -1029,6 +1050,8 @@ fieldset { margin: 0; padding: 0; border: 0; min-width: 0; }
   const rollover = () => { if (today() !== lastDay) render(); };
   setInterval(rollover, 60000);
   document.addEventListener("visibilitychange", rollover);
+  /* Keep two tabs of a local copy in step. */
+  window.addEventListener("storage", e => { if (mode === "browser" && e.key === "grc-desk:tasks") { loadLocal(); render(); } });
 
   render();
   boot();

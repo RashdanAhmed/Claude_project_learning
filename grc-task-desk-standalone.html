@@ -1,0 +1,1069 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<style>:root{color-scheme:light;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style>
+<title>GRC Task Desk</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans+Condensed:wght@500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+/* Layout: a working desk. Triage strip on top, task register on the left, routine library on the right. */
+:root {
+  --bg: #F1F4F4;
+  --surface: #FFFFFF;
+  --sunken: #E6ECED;
+  --ink: #14232A;
+  --muted: #56676E;
+  --line: #D4DDDF;
+  --line-strong: #B5C3C7;
+  --accent: #0D5B6C;
+  --accent-hover: #09495A;
+  --accent-soft: #DBEAEE;
+  --on-accent: #FFFFFF;
+  --crit: #B3261E;
+  --crit-soft: #FBE5E2;
+  --warn: #8C5900;
+  --warn-soft: #FAEED3;
+  --ok: #23704A;
+  --ok-soft: #DDF0E4;
+  --wait: #4A53A0;
+  --wait-soft: #E5E7F6;
+  --scrim: rgba(10, 24, 30, .45);
+  --shadow: 0 1px 2px rgba(12, 32, 40, .06), 0 10px 30px rgba(12, 32, 40, .10);
+  --shadow-sm: 0 1px 2px rgba(12, 32, 40, .10);
+
+  --f-display: "IBM Plex Sans Condensed", "Arial Narrow", system-ui, sans-serif;
+  --f-body: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --f-mono: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0E1518; --surface: #152025; --sunken: #1C2A30; --ink: #E2EAEC; --muted: #93A4AA;
+    --line: #273840; --line-strong: #3A4F57; --accent: #62B6C6; --accent-hover: #7FC6D3;
+    --accent-soft: #163942; --on-accent: #06222A; --crit: #F0877E; --crit-soft: #3B1D1B;
+    --warn: #E5B061; --warn-soft: #362A15; --ok: #7BC897; --ok-soft: #163026;
+    --wait: #A6B0F0; --wait-soft: #232A4B; --scrim: rgba(0, 0, 0, .6);
+    --shadow: 0 1px 2px rgba(0, 0, 0, .4), 0 12px 32px rgba(0, 0, 0, .45);
+    --shadow-sm: 0 1px 2px rgba(0, 0, 0, .5);
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0E1518; --surface: #152025; --sunken: #1C2A30; --ink: #E2EAEC; --muted: #93A4AA;
+  --line: #273840; --line-strong: #3A4F57; --accent: #62B6C6; --accent-hover: #7FC6D3;
+  --accent-soft: #163942; --on-accent: #06222A; --crit: #F0877E; --crit-soft: #3B1D1B;
+  --warn: #E5B061; --warn-soft: #362A15; --ok: #7BC897; --ok-soft: #163026;
+  --wait: #A6B0F0; --wait-soft: #232A4B; --scrim: rgba(0, 0, 0, .6);
+  --shadow: 0 1px 2px rgba(0, 0, 0, .4), 0 12px 32px rgba(0, 0, 0, .45);
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, .5);
+  color-scheme: dark;
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+body {
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--f-body);
+  font-size: 14px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.sr { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
+
+.wrap {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding-block: 28px 56px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  display: grid;
+  gap: 22px;
+}
+
+/* Header */
+.top { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 16px 24px; }
+.eyebrow { margin: 0 0 6px; font-family: var(--f-mono); font-size: 12px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+h1 { margin: 0; font-family: var(--f-display); font-weight: 600; font-size: 34px; line-height: 1.05; letter-spacing: -.01em; text-wrap: balance; }
+.dateline { margin: 8px 0 0; display: flex; flex-wrap: wrap; gap: 4px 16px; color: var(--muted); }
+.dateline .mono { font-family: var(--f-mono); font-size: 13px; }
+.top-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 10px; }
+.top-actions input[type="search"] { width: 250px; max-width: 100%; }
+.sync { display: inline-flex; align-items: center; gap: 6px; font-family: var(--f-mono); font-size: 12px; color: var(--muted); margin-right: 4px; }
+.sync::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: var(--line-strong); }
+.sync[data-state="synced"]::before, .sync[data-state="browser"]::before { background: var(--ok); }
+.sync[data-state="saving"]::before { background: var(--accent); }
+.sync[data-state="local"]::before, .sync[data-state="error"]::before { background: var(--warn); }
+
+/* Controls */
+.btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+  min-height: 36px; padding: 8px 14px;
+  font: 500 14px/1 var(--f-body);
+  color: var(--ink); background: var(--surface);
+  border: 1px solid var(--line-strong); border-radius: 8px;
+  cursor: pointer; white-space: nowrap;
+}
+.btn:hover { border-color: var(--accent); }
+.btn.primary { background: var(--accent); border-color: var(--accent); color: var(--on-accent); }
+.btn.primary:hover { background: var(--accent-hover); border-color: var(--accent-hover); }
+.btn.ghost { background: transparent; border-color: transparent; color: var(--muted); }
+.btn.ghost:hover { color: var(--ink); background: var(--sunken); }
+.btn.small { min-height: 28px; padding: 5px 10px; font-size: 13px; }
+.btn.danger { background: var(--crit); border-color: var(--crit); color: var(--on-accent); }
+.btn.danger-ghost { background: transparent; border-color: transparent; color: var(--crit); }
+.btn.danger-ghost:hover { background: var(--crit-soft); }
+input[type="text"], input[type="search"], input[type="date"], select, textarea {
+  width: 100%; min-height: 36px; padding: 7px 10px;
+  font: 400 14px/1.4 var(--f-body);
+  color: var(--ink); background: var(--surface);
+  border: 1px solid var(--line-strong); border-radius: 8px;
+}
+textarea { resize: vertical; min-height: 72px; }
+select { width: auto; padding-right: 28px; }
+input::placeholder, textarea::placeholder { color: var(--muted); opacity: .8; }
+
+/* Triage strip */
+.tiles {
+  display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 1px;
+  background: var(--line); border: 1px solid var(--line); border-radius: 12px; overflow: hidden;
+}
+.tile {
+  display: grid; gap: 2px; padding: 14px 16px; text-align: left;
+  font: inherit; color: var(--ink); background: var(--surface); border: 0; cursor: pointer;
+}
+.tile:hover { background: var(--sunken); }
+.tile:focus-visible { outline-offset: -3px; }
+.tile .n { font-family: var(--f-mono); font-size: 30px; font-weight: 500; line-height: 1.1; font-variant-numeric: tabular-nums; }
+.tile .l { font-size: 12px; font-weight: 500; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
+.tile[data-tone="crit"] .n { color: var(--crit); }
+.tile[data-tone="warn"] .n { color: var(--warn); }
+.tile[data-tone="ok"] .n { color: var(--ok); }
+
+/* Desk layout */
+.layout { display: grid; grid-template-columns: minmax(0, 1fr) 340px; gap: 28px; align-items: start; }
+main { display: grid; gap: 16px; min-width: 0; }
+aside { display: grid; gap: 16px; min-width: 0; }
+
+.toolbar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px 12px; }
+.views { display: flex; flex-wrap: wrap; gap: 2px; padding: 3px; background: var(--sunken); border-radius: 10px; }
+.views button {
+  min-height: 32px; padding: 7px 12px; border: 0; border-radius: 8px;
+  font: 500 13px/1 var(--f-body); color: var(--muted); background: transparent; cursor: pointer;
+}
+.views button:hover { color: var(--ink); }
+.views button[aria-pressed="true"] { background: var(--surface); color: var(--ink); box-shadow: var(--shadow-sm); }
+.filters { display: flex; flex-wrap: wrap; gap: 8px; }
+
+.quick { display: flex; gap: 8px; }
+.quick input { flex: 1; min-width: 0; }
+
+.notices { display: grid; gap: 8px; }
+.notices:empty { display: none; }
+.notice {
+  display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 14px;
+  padding: 10px 14px; border-radius: 10px; background: var(--accent-soft); font-size: 13px;
+}
+.notice.warn { background: var(--warn-soft); }
+.notice p { margin: 0; max-width: 70ch; }
+.notice .acts { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+
+/* Task register */
+.list { display: grid; gap: 22px; }
+.group { display: grid; gap: 8px; }
+.group h2 {
+  margin: 0; display: flex; align-items: baseline; gap: 8px;
+  font-family: var(--f-display); font-size: 14px; font-weight: 600; letter-spacing: .07em; text-transform: uppercase;
+}
+.group h2 .count { font-family: var(--f-mono); font-weight: 400; letter-spacing: 0; color: var(--muted); }
+.group[data-key="overdue"] h2 { color: var(--crit); }
+.group[data-key="today"] h2 { color: var(--warn); }
+.tasklist { list-style: none; margin: 0; padding: 0; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; }
+.task { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 4px 12px; align-items: start; padding: 12px 14px; }
+.task + .task { border-top: 1px solid var(--line); }
+.check { width: 18px; height: 18px; margin: 3px 0 0; accent-color: var(--accent); cursor: pointer; }
+.check:disabled { cursor: default; }
+.body { min-width: 0; }
+.title {
+  all: unset; cursor: pointer; display: inline;
+  font-size: 15px; font-weight: 500; line-height: 1.35; color: var(--ink); overflow-wrap: anywhere;
+}
+.title:hover { text-decoration: underline; text-decoration-color: var(--line-strong); text-underline-offset: 3px; }
+.title:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 2px; }
+.notes {
+  margin: 2px 0 0; color: var(--muted); font-size: 13px;
+  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; overflow-wrap: anywhere;
+}
+.meta { margin-top: 6px; display: flex; flex-wrap: wrap; align-items: center; gap: 4px 10px; font-size: 12.5px; color: var(--muted); }
+.code {
+  display: inline-block; padding: 0 5px; border: 1px solid var(--line-strong); border-radius: 4px;
+  font-family: var(--f-mono); font-size: 11px; font-weight: 500; letter-spacing: .04em; line-height: 17px; color: var(--ink);
+}
+.ref { font-family: var(--f-mono); font-size: 12px; }
+.meta a { color: var(--accent); text-underline-offset: 2px; }
+.side { display: grid; justify-items: end; gap: 6px; text-align: right; }
+.due { font-family: var(--f-mono); font-size: 12px; white-space: nowrap; color: var(--muted); }
+.due[data-tone="crit"] { color: var(--crit); font-weight: 500; }
+.due[data-tone="warn"] { color: var(--warn); font-weight: 500; }
+.due[data-tone="soon"] { color: var(--ink); }
+.pills { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 4px; }
+.pill { padding: 1px 8px; border-radius: 999px; font-size: 12px; font-weight: 500; white-space: nowrap; }
+.pill.high { background: var(--crit-soft); color: var(--crit); }
+.pill.doing { background: var(--accent-soft); color: var(--accent); }
+.pill.waiting { background: var(--wait-soft); color: var(--wait); }
+.task.is-done .title { text-decoration: line-through; color: var(--muted); }
+
+.empty {
+  display: grid; justify-items: start; gap: 10px; padding: 28px 24px;
+  background: var(--surface); border: 1px dashed var(--line-strong); border-radius: 12px;
+}
+.empty h3 { margin: 0; font-family: var(--f-display); font-size: 21px; font-weight: 600; }
+.empty p { margin: 0; max-width: 58ch; color: var(--muted); }
+.empty .acts { display: flex; flex-wrap: wrap; gap: 8px; }
+
+/* Side panels */
+.panel { padding: 16px 18px; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; }
+.panel h2 { margin: 0; font-family: var(--f-display); font-size: 19px; font-weight: 600; }
+.panel .sub { margin: 4px 0 14px; color: var(--muted); font-size: 13px; }
+.cadence { display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: 4px; }
+.cadence button {
+  min-height: 28px; padding: 4px 10px; border: 1px solid var(--line); border-radius: 999px;
+  font: 500 12.5px/1 var(--f-body); color: var(--muted); background: transparent; cursor: pointer;
+}
+.cadence button:hover { color: var(--ink); border-color: var(--line-strong); }
+.cadence button[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: var(--on-accent); }
+.lib { list-style: none; margin: 0; padding: 0; }
+.lib li { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 10px; padding: 10px 0; border-bottom: 1px solid var(--line); }
+.lib-title { margin: 0; font-size: 13.5px; font-weight: 500; line-height: 1.35; }
+.lib-ref { margin: 4px 0 0; display: flex; flex-wrap: wrap; align-items: center; gap: 6px; font-family: var(--f-mono); font-size: 11.5px; color: var(--muted); }
+.in-list { font-size: 12px; color: var(--ok); white-space: nowrap; }
+.lib-all { margin-top: 12px; }
+.lib-all:empty { display: none; }
+.codes { margin: 10px 0 0; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px 12px; }
+.codes div { display: flex; align-items: center; gap: 8px; min-width: 0; }
+.codes dt { flex: none; }
+.codes dd { margin: 0; font-size: 12.5px; color: var(--muted); line-height: 1.3; }
+
+.foot { color: var(--muted); font-size: 12.5px; max-width: 80ch; }
+
+/* Editor */
+dialog {
+  width: min(620px, calc(100vw - 32px)); max-height: calc(100vh - 32px); padding: 0;
+  color: var(--ink); background: var(--surface); border: 1px solid var(--line); border-radius: 14px; box-shadow: var(--shadow);
+}
+dialog::backdrop { background: rgba(10, 24, 30, .5); background: var(--scrim, rgba(10, 24, 30, .5)); }
+.ed-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 16px 20px; border-bottom: 1px solid var(--line); }
+.ed-head h2 { margin: 0; font-family: var(--f-display); font-size: 20px; font-weight: 600; }
+.icon-btn { width: 32px; height: 32px; border: 0; border-radius: 8px; background: transparent; color: var(--muted); font-size: 22px; line-height: 1; cursor: pointer; }
+.icon-btn:hover { background: var(--sunken); color: var(--ink); }
+fieldset { margin: 0; padding: 0; border: 0; min-width: 0; }
+.fields { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px 16px; padding: 16px 20px; }
+.field { display: grid; gap: 4px; min-width: 0; }
+.field > span { font-size: 12.5px; font-weight: 500; color: var(--muted); }
+.field select { width: 100%; }
+.span2 { grid-column: 1 / -1; }
+.ed-history { margin: 0; padding: 0 20px 12px; font-size: 12.5px; color: var(--muted); }
+.ed-history .ref { color: var(--ink); }
+.ed-foot { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px; padding: 12px 20px 16px; border-top: 1px solid var(--line); }
+.ed-foot .acts, .del-zone, #ed-confirm { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+#ed-confirm { font-size: 13px; }
+
+/* Toast */
+.toast {
+  position: fixed; left: 50%; bottom: calc(20px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); z-index: 20;
+  display: flex; align-items: center; gap: 14px; max-width: calc(100vw - 32px); padding: 10px 12px 10px 16px;
+  font-size: 13.5px; color: var(--bg); background: var(--ink); border-radius: 10px; box-shadow: var(--shadow);
+}
+.toast button { padding: 4px 6px; border: 0; background: transparent; color: var(--bg); font: 600 13px var(--f-body); text-decoration: underline; text-underline-offset: 2px; cursor: pointer; }
+
+@media (max-width: 960px) {
+  .layout { grid-template-columns: minmax(0, 1fr); }
+}
+@media (max-width: 640px) {
+  h1 { font-size: 28px; }
+  .top-actions { width: 100%; }
+  .top-actions input[type="search"] { flex: 1; width: auto; min-width: 0; }
+  .sync { width: 100%; }
+  .tiles { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .tile:last-child { grid-column: 1 / -1; }
+  .tile .n { font-size: 26px; }
+  .filters, .filters select { width: 100%; }
+  .filters select { flex: 1; }
+  .filters { flex-wrap: nowrap; }
+  .task { grid-template-columns: auto minmax(0, 1fr); }
+  .side { grid-column: 2; display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-start; text-align: left; }
+  .pills { justify-content: flex-start; }
+  .fields { grid-template-columns: minmax(0, 1fr); }
+  .codes { grid-template-columns: minmax(0, 1fr); }
+}
+@media (prefers-reduced-motion: reduce) {
+  * { scroll-behavior: auto !important; transition: none !important; animation: none !important; }
+}
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <header class="top">
+    <div>
+      <p class="eyebrow">Governance · Risk · Compliance</p>
+      <h1>GRC Task Desk</h1>
+      <p class="dateline"><span id="d-date"></span><span class="mono" id="d-week"></span><span class="mono" id="d-quarter"></span></p>
+    </div>
+    <div class="top-actions">
+      <span class="sync" id="sync" data-state="connecting">Connecting…</span>
+      <label class="sr" for="q">Search tasks</label>
+      <input type="search" id="q" placeholder="Search tasks, controls, owners" autocomplete="off">
+      <button type="button" class="btn primary" id="new-task">New task</button>
+    </div>
+  </header>
+
+  <section class="tiles" aria-label="Today at a glance">
+    <button type="button" class="tile" id="tile-overdue" data-go="focus"><span class="n" id="n-overdue">0</span><span class="l">Overdue</span></button>
+    <button type="button" class="tile" id="tile-today" data-go="focus"><span class="n" id="n-today">0</span><span class="l">Due today</span></button>
+    <button type="button" class="tile" id="tile-soon" data-go="week"><span class="n" id="n-soon">0</span><span class="l">Next 7 days</span></button>
+    <button type="button" class="tile" id="tile-waiting" data-go="waiting"><span class="n" id="n-waiting">0</span><span class="l">Waiting on others</span></button>
+    <button type="button" class="tile" id="tile-done" data-go="done"><span class="n" id="n-done">0</span><span class="l">Done this week</span></button>
+  </section>
+
+  <div class="layout">
+    <main>
+      <div class="toolbar">
+        <div class="views" id="views" role="group" aria-label="View">
+          <button type="button" data-view="focus" aria-pressed="true">Focus</button>
+          <button type="button" data-view="week" aria-pressed="false">Next 7 days</button>
+          <button type="button" data-view="open" aria-pressed="false">All open</button>
+          <button type="button" data-view="waiting" aria-pressed="false">Waiting</button>
+          <button type="button" data-view="recurring" aria-pressed="false">Recurring</button>
+          <button type="button" data-view="done" aria-pressed="false">Done</button>
+        </div>
+        <div class="filters">
+          <label class="sr" for="filter-area">Filter by area</label>
+          <select id="filter-area"></select>
+          <label class="sr" for="filter-fw">Filter by framework</label>
+          <select id="filter-fw"></select>
+        </div>
+      </div>
+
+      <form class="quick" id="quick" autocomplete="off">
+        <label class="sr" for="quick-title">Add a task for today</label>
+        <input type="text" id="quick-title" placeholder="Add a task for today, then press Enter" maxlength="200">
+        <button type="submit" class="btn">Add</button>
+      </form>
+
+      <div class="notices" id="notices"></div>
+      <div class="list" id="list"></div>
+    </main>
+
+    <aside>
+      <section class="panel" id="library">
+        <h2>Routine library</h2>
+        <p class="sub">Standard GRC check-ins, each mapped to a control reference. Add one and it repeats on its cadence. Tick it to log the cycle and it moves to the next due date.</p>
+        <div class="cadence" id="cadence" role="group" aria-label="Cadence">
+          <button type="button" data-lib="daily" aria-pressed="true">Daily</button>
+          <button type="button" data-lib="weekly" aria-pressed="false">Weekly</button>
+          <button type="button" data-lib="monthly" aria-pressed="false">Monthly</button>
+          <button type="button" data-lib="quarterly" aria-pressed="false">Quarterly</button>
+          <button type="button" data-lib="annual" aria-pressed="false">Annual</button>
+        </div>
+        <ul class="lib" id="lib-list"></ul>
+        <div class="lib-all" id="lib-all"></div>
+      </section>
+      <section class="panel">
+        <h2>Area codes</h2>
+        <dl class="codes" id="codes"></dl>
+      </section>
+    </aside>
+  </div>
+
+  <p class="foot">Control references follow ISO/IEC 27001:2022, the 2017 SOC 2 Trust Services Criteria, NIST CSF 2.0, PCI DSS v4.0 and GDPR. Check them against the versions your programme is certified to.</p>
+</div>
+
+<dialog id="editor" aria-labelledby="ed-title">
+  <form id="ed-form" novalidate>
+    <div class="ed-head">
+      <h2 id="ed-title">New task</h2>
+      <button type="button" class="icon-btn" data-close aria-label="Close">×</button>
+    </div>
+    <fieldset id="ed-fields">
+      <div class="fields">
+        <label class="field span2"><span>Task</span><input type="text" id="f-title" maxlength="200" required></label>
+        <label class="field"><span>Area</span><select id="f-cat"></select></label>
+        <label class="field"><span>Priority</span><select id="f-pri"></select></label>
+        <label class="field"><span>Due date</span><input type="date" id="f-due"></label>
+        <label class="field"><span>Repeats</span><select id="f-recur"></select></label>
+        <label class="field"><span>Framework</span><input type="text" id="f-fw" list="fw-list" placeholder="ISO 27001" maxlength="60"></label>
+        <label class="field"><span>Control reference</span><input type="text" id="f-ctrl" placeholder="A.5.18" maxlength="60"></label>
+        <label class="field"><span>Status</span><select id="f-status"></select></label>
+        <label class="field"><span>Owner or stakeholder</span><input type="text" id="f-owner" placeholder="IT Operations" maxlength="80"></label>
+        <label class="field span2"><span>Evidence location</span><input type="text" id="f-evidence" placeholder="Link to the evidence folder, ticket or audit request" maxlength="500"></label>
+        <label class="field span2"><span>Notes</span><textarea id="f-notes" rows="3" maxlength="4000"></textarea></label>
+      </div>
+    </fieldset>
+    <p class="ed-history" id="ed-history" hidden></p>
+    <div class="ed-foot">
+      <div class="del-zone">
+        <button type="button" class="btn danger-ghost" id="ed-delete">Delete task</button>
+        <span id="ed-confirm" hidden>Delete this task?
+          <button type="button" class="btn danger small" id="ed-del-yes">Delete</button>
+          <button type="button" class="btn ghost small" id="ed-del-no">Keep it</button>
+        </span>
+      </div>
+      <div class="acts">
+        <button type="button" class="btn ghost" data-close>Cancel</button>
+        <button type="submit" class="btn primary" id="ed-save">Save task</button>
+      </div>
+    </div>
+  </form>
+</dialog>
+<datalist id="fw-list"></datalist>
+
+<div class="toast" id="toast" role="status" aria-live="polite" hidden><span id="toast-msg"></span><button type="button" id="toast-undo">Undo</button></div>
+
+<script>
+(() => {
+  "use strict";
+  const $ = (s, r = document) => r.querySelector(s);
+  const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+
+  const CATS = {
+    risk: { code: "RSK", name: "Risk management" },
+    compliance: { code: "CMP", name: "Compliance & controls" },
+    audit: { code: "AUD", name: "Audit & assurance" },
+    policy: { code: "POL", name: "Policy & exceptions" },
+    vendor: { code: "TPR", name: "Third-party risk" },
+    access: { code: "IAM", name: "Access reviews" },
+    incident: { code: "INC", name: "Incidents & breaches" },
+    awareness: { code: "TRN", name: "Training & awareness" },
+    bcm: { code: "BCM", name: "Continuity & resilience" },
+    governance: { code: "GOV", name: "Reporting & governance" },
+  };
+  const RECUR = { none: "One-off", daily: "Daily", weekly: "Weekly", monthly: "Monthly", quarterly: "Quarterly", annual: "Annual" };
+  const PRI = { high: "High", medium: "Medium", low: "Low" };
+  const PRI_RANK = { high: 0, medium: 1, low: 2 };
+  const STATUS = { todo: "To do", doing: "In progress", waiting: "Waiting on others", done: "Done" };
+  const FRAMEWORKS = ["ISO 27001", "SOC 2", "NIST CSF 2.0", "PCI DSS v4.0", "GDPR", "HIPAA", "ISO 22301", "NIS2", "DORA", "Internal"];
+
+  const LIBRARY = [
+    { recur: "daily", title: "Check the incident log for items with a regulatory clock", cat: "incident", fw: "GDPR", ctrl: "Art. 33", pri: "high", notes: "Personal data breaches go to the supervisory authority within 72 hours of becoming aware." },
+    { recur: "daily", title: "Triage new policy exception requests", cat: "policy", fw: "ISO 27001", ctrl: "A.5.36", pri: "medium", notes: "" },
+    { recur: "daily", title: "Work the audit evidence request queue", cat: "audit", fw: "SOC 2", ctrl: "", pri: "medium", notes: "Upload evidence to the auditor portal and update the request tracker." },
+    { recur: "daily", title: "Answer customer security questionnaires in the queue", cat: "compliance", fw: "", ctrl: "", pri: "medium", notes: "" },
+    { recur: "daily", title: "Review regulatory and standards update alerts", cat: "compliance", fw: "ISO 27001", ctrl: "A.5.31", pri: "low", notes: "" },
+
+    { recur: "weekly", title: "Review the risk register for new or changed risks", cat: "risk", fw: "ISO 27001", ctrl: "8.2", pri: "medium", notes: "" },
+    { recur: "weekly", title: "Chase overdue risk treatment actions with owners", cat: "risk", fw: "ISO 27001", ctrl: "8.3", pri: "high", notes: "" },
+    { recur: "weekly", title: "Update the control testing tracker", cat: "compliance", fw: "SOC 2", ctrl: "CC4.1", pri: "medium", notes: "" },
+    { recur: "weekly", title: "Follow up open audit findings and corrective actions", cat: "audit", fw: "ISO 27001", ctrl: "10.2", pri: "high", notes: "" },
+    { recur: "weekly", title: "Send the weekly GRC status note to the CISO", cat: "governance", fw: "", ctrl: "", pri: "low", notes: "" },
+
+    { recur: "monthly", title: "Review privileged access rights", cat: "access", fw: "ISO 27001", ctrl: "A.8.2", pri: "high", notes: "" },
+    { recur: "monthly", title: "Compile KRI and compliance metrics", cat: "governance", fw: "ISO 27001", ctrl: "9.1", pri: "medium", notes: "" },
+    { recur: "monthly", title: "Chase overdue security awareness training", cat: "awareness", fw: "ISO 27001", ctrl: "A.6.3", pri: "medium", notes: "" },
+    { recur: "monthly", title: "Reassess suppliers due for review", cat: "vendor", fw: "ISO 27001", ctrl: "A.5.22", pri: "medium", notes: "" },
+    { recur: "monthly", title: "Check vulnerability remediation against SLAs", cat: "compliance", fw: "ISO 27001", ctrl: "A.8.8", pri: "medium", notes: "" },
+
+    { recur: "quarterly", title: "Run the user access recertification", cat: "access", fw: "ISO 27001", ctrl: "A.5.18", pri: "high", notes: "" },
+    { recur: "quarterly", title: "Prepare the risk committee pack", cat: "risk", fw: "NIST CSF 2.0", ctrl: "GV.OV", pri: "medium", notes: "" },
+    { recur: "quarterly", title: "Collect internal vulnerability scan evidence", cat: "compliance", fw: "PCI DSS v4.0", ctrl: "11.3.1", pri: "medium", notes: "" },
+    { recur: "quarterly", title: "Check the policy review schedule", cat: "policy", fw: "NIST CSF 2.0", ctrl: "GV.PO-02", pri: "low", notes: "" },
+
+    { recur: "annual", title: "Plan and run the internal ISMS audit", cat: "audit", fw: "ISO 27001", ctrl: "9.2", pri: "high", notes: "" },
+    { recur: "annual", title: "Hold the ISMS management review", cat: "governance", fw: "ISO 27001", ctrl: "9.3", pri: "high", notes: "" },
+    { recur: "annual", title: "Review and re-approve information security policies", cat: "policy", fw: "ISO 27001", ctrl: "A.5.1", pri: "medium", notes: "" },
+    { recur: "annual", title: "Refresh the information security risk assessment", cat: "risk", fw: "ISO 27001", ctrl: "6.1.2", pri: "high", notes: "" },
+    { recur: "annual", title: "Update the Statement of Applicability", cat: "compliance", fw: "ISO 27001", ctrl: "6.1.3", pri: "medium", notes: "" },
+    { recur: "annual", title: "Test business continuity and ICT recovery", cat: "bcm", fw: "ISO 27001", ctrl: "A.5.30", pri: "medium", notes: "" },
+    { recur: "annual", title: "Run an incident response tabletop exercise", cat: "incident", fw: "ISO 27001", ctrl: "A.5.24", pri: "medium", notes: "" },
+  ];
+
+  /* Dates are local calendar days as YYYY-MM-DD strings, so they compare as text. */
+  const pad = n => String(n).padStart(2, "0");
+  const iso = d => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+  const parse = s => { const [y, m, d] = s.split("-").map(Number); return new Date(y, m - 1, d); };
+  const today = () => iso(new Date());
+  const addDays = (s, n) => { const d = parse(s); d.setDate(d.getDate() + n); return iso(d); };
+  const addMonths = (s, n) => {
+    const d = parse(s), day = d.getDate();
+    d.setDate(1); d.setMonth(d.getMonth() + n);
+    d.setDate(Math.min(day, new Date(d.getFullYear(), d.getMonth() + 1, 0).getDate()));
+    return iso(d);
+  };
+  const diffDays = (a, b) => Math.round((parse(a) - parse(b)) / 864e5);
+  const weekStart = s => addDays(s, -((parse(s).getDay() + 6) % 7));
+  const fmtShort = s => {
+    if (!s) return "";
+    const d = parse(s);
+    const opts = d.getFullYear() === new Date().getFullYear() ? { day: "numeric", month: "short" } : { day: "numeric", month: "short", year: "numeric" };
+    return d.toLocaleDateString(undefined, opts);
+  };
+  const fmtLong = s => s ? parse(s).toLocaleDateString(undefined, { weekday: "short", day: "numeric", month: "short" }) : "";
+  function isoWeek(s) {
+    const d = parse(s);
+    d.setDate(d.getDate() - ((d.getDay() + 6) % 7) + 3);
+    const jan4 = new Date(d.getFullYear(), 0, 4);
+    return 1 + Math.round(((d - jan4) / 864e5 - 3 + ((jan4.getDay() + 6) % 7)) / 7);
+  }
+  const quarterEnd = s => { const d = parse(s); return iso(new Date(d.getFullYear(), Math.floor(d.getMonth() / 3) * 3 + 3, 0)); };
+  function step(s, recur) {
+    switch (recur) {
+      case "daily": return addDays(s, 1);
+      case "weekly": return addDays(s, 7);
+      case "monthly": return addMonths(s, 1);
+      case "quarterly": return addMonths(s, 3);
+      case "annual": return addMonths(s, 12);
+    }
+    return s;
+  }
+  function nextDue(t, now) {
+    if (!RECUR[t.recur] || t.recur === "none") return t.due;
+    let n = step(t.due || now, t.recur);
+    while (n <= now) n = step(n, t.recur);
+    return n;
+  }
+  function firstDue(recur) {
+    const now = today(), d = parse(now);
+    if (recur === "weekly") return addDays(now, (5 - d.getDay() + 7) % 7);
+    if (recur === "monthly") return iso(new Date(d.getFullYear(), d.getMonth() + 1, 0));
+    if (recur === "quarterly") return quarterEnd(now);
+    if (recur === "annual") return iso(new Date(d.getFullYear(), 11, 31));
+    return now;
+  }
+
+  /* Per-viewer conveniences only: remembered view and filters. */
+  const prefs = {
+    get(k, d) { try { const v = localStorage.getItem("grc-desk:" + k); return v == null ? d : JSON.parse(v); } catch (e) { return d; } },
+    set(k, v) { try { localStorage.setItem("grc-desk:" + k, JSON.stringify(v)); } catch (e) { /* storage unavailable */ } },
+  };
+  const VIEWS = ["focus", "week", "open", "waiting", "recurring", "done"];
+  const ui = {
+    view: VIEWS.includes(prefs.get("view", "focus")) ? prefs.get("view", "focus") : "focus",
+    cat: prefs.get("cat", ""),
+    fw: prefs.get("fw", ""),
+    lib: RECUR[prefs.get("lib", "daily")] ? prefs.get("lib", "daily") : "daily",
+    q: "",
+    confirmClear: false,
+  };
+  if (!CATS[ui.cat]) ui.cat = "";
+
+  /* Store: the db capability keeps tasks on claude.ai. A copy opened straight from disk
+     (no window.claude) keeps them in this browser's localStorage. Inside a claude.ai view
+     without db, the page runs in this tab only. */
+  let db = null, ro = false, mode = "connecting", pending = 0, lastDay = today(), localBlocked = false;
+  const tasks = new Map();
+  const queues = {};
+
+  function norm(id, b) {
+    return {
+      id,
+      title: String(b.title || "Untitled task"),
+      notes: String(b.notes || ""),
+      cat: CATS[b.cat] ? b.cat : "compliance",
+      fw: String(b.fw || ""),
+      ctrl: String(b.ctrl || ""),
+      pri: PRI[b.pri] ? b.pri : "medium",
+      status: STATUS[b.status] ? b.status : "todo",
+      due: /^\d{4}-\d{2}-\d{2}$/.test(b.due || "") ? b.due : "",
+      recur: RECUR[b.recur] ? b.recur : "none",
+      owner: String(b.owner || ""),
+      evidence: String(b.evidence || ""),
+      history: Array.isArray(b.history) ? b.history.filter(h => typeof h === "string") : [],
+      completedAt: String(b.completedAt || ""),
+      created: Number(b.created) || 0,
+      starter: !!b.starter,
+    };
+  }
+  const clean = t => { const { id, ...body } = t; return body; };
+  const blank = () => norm("", {
+    title: "", cat: ui.cat || "compliance", fw: ui.fw || "", pri: "medium", status: "todo",
+    due: today(), recur: "none", created: Date.now(),
+  });
+  const newId = () => db ? db.collection("tasks").doc().id : "local-" + Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+
+  function track(id, op) {
+    pending++; renderSync();
+    queues[id] = (queues[id] || Promise.resolve())
+      .then(op)
+      .catch(onWriteError)
+      .finally(() => { pending--; renderSync(); });
+  }
+  function save(id, body) {
+    if (ro) return;
+    tasks.set(id, norm(id, body));
+    render();
+    if (!db) { persistLocal(); return; }
+    const ref = db.collection("tasks").doc(id);
+    track(id, () => ref.set(body));
+  }
+  function remove(id) {
+    if (ro) return;
+    tasks.delete(id);
+    render();
+    if (!db) { persistLocal(); return; }
+    const ref = db.collection("tasks").doc(id);
+    track(id, () => ref.delete());
+  }
+  function loadLocal() {
+    try { localStorage.setItem("grc-desk:probe", "1"); localStorage.removeItem("grc-desk:probe"); } catch (e) { localBlocked = true; }
+    tasks.clear();
+    const saved = prefs.get("tasks", {});
+    if (saved && typeof saved === "object") {
+      for (const [id, b] of Object.entries(saved)) if (b && typeof b === "object") tasks.set(id, norm(id, b));
+    }
+  }
+  function persistLocal() {
+    if (mode !== "browser") return;
+    const all = {};
+    for (const t of tasks.values()) all[t.id] = clean(t);
+    try { localStorage.setItem("grc-desk:tasks", JSON.stringify(all)); localBlocked = false; }
+    catch (e) { localBlocked = true; }
+    renderNotices();
+    renderSync();
+  }
+  function onWriteError(e) {
+    const code = e && e.code;
+    if (code === "invalid_argument" || code === "not_granted") {
+      ro = true; render();
+      toast("This list is view-only for you, so that change wasn't saved.");
+    } else if (code === "quota_exceeded") {
+      toast("The task store is full. Delete finished tasks to make room.");
+    } else if (code === "revoked") {
+      mode = "error"; render();
+    } else {
+      toast("That change didn't save. Check your connection and try again.");
+    }
+  }
+
+  async function boot() {
+    const c = window.claude;
+    if (!c || typeof c.use !== "function") { mode = "browser"; loadLocal(); render(); return; }
+    let d = null, u = null;
+    try { [d, u] = await Promise.all([c.use("db"), c.use("user")]); } catch (e) { /* treated as absent */ }
+    if (u) { try { if (await u.can("data.write") === false) ro = true; } catch (e) { /* keep controls */ } }
+    if (!d) { mode = "local"; render(); return; }
+    db = d;
+    db.collection("tasks").onSnapshot(snap => {
+      tasks.clear();
+      for (const doc of snap.docs) { const b = doc.data(); if (b) tasks.set(doc.id, norm(doc.id, b)); }
+      mode = "synced";
+      render();
+    }, () => { mode = "error"; render(); });
+  }
+
+  /* Derived views */
+  function matches(t) {
+    if (ui.cat && t.cat !== ui.cat) return false;
+    if (ui.fw && t.fw !== ui.fw) return false;
+    if (ui.q) {
+      const hay = [t.title, t.notes, t.fw, t.ctrl, t.owner, t.evidence, CATS[t.cat].code, CATS[t.cat].name].join(" ").toLowerCase();
+      if (!hay.includes(ui.q)) return false;
+    }
+    return true;
+  }
+  const byDue = (a, b) => (a.due || "9999").localeCompare(b.due || "9999") || PRI_RANK[a.pri] - PRI_RANK[b.pri] || a.title.localeCompare(b.title);
+  function dueBucket(t, now) {
+    if (!t.due) return "nodate";
+    const d = diffDays(t.due, now);
+    return d < 0 ? "overdue" : d === 0 ? "today" : d <= 7 ? "week" : "later";
+  }
+  function buildGroups(list, now) {
+    if (ui.view === "done") {
+      const ws = weekStart(now);
+      const done = list.filter(t => t.status === "done").sort((a, b) => b.completedAt.localeCompare(a.completedAt) || a.title.localeCompare(b.title));
+      const logged = list.filter(t => t.status !== "done" && t.history.some(h => h >= ws)).sort((a, b) => b.history[0].localeCompare(a.history[0]));
+      return [
+        { key: "logged", label: "Recurring check-ins logged this week", items: logged },
+        { key: "done", label: "Completed", items: done },
+      ];
+    }
+    if (ui.view === "recurring") {
+      return Object.keys(RECUR).filter(r => r !== "none").map(r => ({
+        key: r, label: RECUR[r], items: list.filter(t => t.recur === r && t.status !== "done").sort(byDue),
+      }));
+    }
+    let items = list.filter(t => t.status !== "done");
+    if (ui.view === "focus") items = items.filter(t => (t.due && t.due <= now) || t.status === "doing");
+    if (ui.view === "week") items = items.filter(t => t.due && diffDays(t.due, now) <= 7);
+    if (ui.view === "waiting") items = items.filter(t => t.status === "waiting");
+    const labels = { overdue: "Overdue", today: "Due today", week: "Next 7 days", later: "Later", nodate: "No due date" };
+    return Object.keys(labels).map(k => ({ key: k, label: labels[k], items: items.filter(t => dueBucket(t, now) === k).sort(byDue) }));
+  }
+  function stats(now) {
+    const ws = weekStart(now);
+    const s = { overdue: 0, today: 0, soon: 0, waiting: 0, done: 0 };
+    for (const t of tasks.values()) {
+      s.done += t.history.filter(h => h >= ws).length;
+      if (t.status === "done") { if (t.completedAt >= ws) s.done++; continue; }
+      if (t.status === "waiting") s.waiting++;
+      if (t.due) {
+        const d = diffDays(t.due, now);
+        if (d < 0) s.overdue++; else if (d === 0) s.today++; else if (d <= 7) s.soon++;
+      }
+    }
+    return s;
+  }
+  function dueInfo(t, now) {
+    if (!t.due) return { text: "No date", tone: "none" };
+    const d = diffDays(t.due, now);
+    if (d < 0) return { text: (d === -1 ? "1 day" : -d + " days") + " overdue", tone: "crit" };
+    if (d === 0) return { text: "Due today", tone: "warn" };
+    if (d === 1) return { text: "Tomorrow", tone: "soon" };
+    if (d < 7) return { text: parse(t.due).toLocaleDateString(undefined, { weekday: "long" }), tone: "soon" };
+    return { text: fmtShort(t.due), tone: "none" };
+  }
+  const safeUrl = s => /^https?:\/\/\S+$/i.test(s.trim()) ? s.trim() : "";
+
+  /* Rendering */
+  function rowHTML(t, now) {
+    const cat = CATS[t.cat];
+    const done = t.status === "done";
+    const recurring = t.recur !== "none";
+    const ref = [t.fw, t.ctrl].filter(Boolean).join(" · ");
+    const link = safeUrl(t.evidence);
+    const due = dueInfo(t, now);
+    const label = recurring && !done ? `Log “${t.title}” as done for this cycle` : done ? `Reopen “${t.title}”` : `Mark “${t.title}” done`;
+    const meta = [
+      `<span class="code" title="${esc(cat.name)}">${cat.code}</span>`,
+      ref && `<span class="ref">${esc(ref)}</span>`,
+      recurring && `<span>↻ ${RECUR[t.recur]}${t.history[0] ? ", last done " + esc(fmtShort(t.history[0])) : ""}</span>`,
+      t.owner && `<span>Owner: ${esc(t.owner)}</span>`,
+      link ? `<a href="${esc(link)}" target="_blank" rel="noopener noreferrer">Evidence ↗</a>` : t.evidence && `<span>Evidence: ${esc(t.evidence)}</span>`,
+    ].filter(Boolean).join("");
+    const pills = [
+      t.pri === "high" && !done && `<span class="pill high">High</span>`,
+      t.status === "doing" && `<span class="pill doing">In progress</span>`,
+      t.status === "waiting" && `<span class="pill waiting">Waiting</span>`,
+    ].filter(Boolean).join("");
+    const sideDue = done
+      ? `<span class="due">Done ${esc(fmtShort(t.completedAt))}</span>`
+      : `<span class="due" data-tone="${due.tone}">${esc(due.text)}</span>`;
+    return `<li class="task${done ? " is-done" : ""}" data-id="${esc(t.id)}">
+      <input type="checkbox" class="check" id="c-${esc(t.id)}" ${done ? "checked" : ""} ${ro ? "disabled" : ""} aria-label="${esc(label)}">
+      <div class="body">
+        <button type="button" class="title" id="t-${esc(t.id)}" data-act="edit">${esc(t.title)}</button>
+        ${t.notes ? `<p class="notes">${esc(t.notes)}</p>` : ""}
+        <div class="meta">${meta}</div>
+      </div>
+      <div class="side">${sideDue}${pills ? `<span class="pills">${pills}</span>` : ""}</div>
+    </li>`;
+  }
+
+  function emptyHTML() {
+    const loading = mode === "connecting";
+    return `<div class="empty">
+      <h3>${loading ? "Opening your task desk…" : "Nothing on your desk yet"}</h3>
+      <p>Your GRC tasks appear here, sorted into overdue, due today and the next seven days. Type a task above, or start with the daily check-ins from the routine library.</p>
+      ${!loading && !ro ? `<div class="acts"><button type="button" class="btn primary" data-act="add-daily">Add the daily check-ins</button></div>` : ""}
+    </div>`;
+  }
+  function noneHTML() {
+    const filtered = ui.cat || ui.fw || ui.q;
+    const msg = {
+      focus: ["Clear for today", "Nothing is overdue or due today. Look at the next 7 days, or pull a routine from the library."],
+      week: ["A quiet week ahead", "Nothing is due in the next seven days."],
+      open: ["No open tasks", "Everything on your desk is done."],
+      waiting: ["Nobody owes you anything", "Set a task's status to Waiting on others when it depends on someone else, and it shows up here."],
+      recurring: ["No recurring tasks", "Add a check-in from the routine library, or set Repeats when you create a task."],
+      done: ["Nothing completed yet", "Finished tasks and logged check-ins from this week appear here."],
+    }[ui.view];
+    return `<div class="empty">
+      <h3>${filtered ? "No tasks match these filters" : msg[0]}</h3>
+      <p>${filtered ? "Try another area or framework, or clear the search." : msg[1]}</p>
+      ${filtered ? `<div class="acts"><button type="button" class="btn" data-act="clear-filters">Clear filters</button></div>` : ""}
+    </div>`;
+  }
+
+  function renderHeader(now) {
+    const d = parse(now);
+    $("#d-date").textContent = d.toLocaleDateString(undefined, { weekday: "long", day: "numeric", month: "long", year: "numeric" });
+    $("#d-week").textContent = "Week " + isoWeek(now);
+    const left = diffDays(quarterEnd(now), now), q = Math.floor(d.getMonth() / 3) + 1;
+    $("#d-quarter").textContent = left === 0 ? `Q${q} closes today` : `Q${q} closes in ${left} day${left === 1 ? "" : "s"}`;
+  }
+  function renderTiles(now) {
+    const s = stats(now);
+    const set = (k, tone) => { $("#n-" + k).textContent = s[k]; $("#tile-" + k).dataset.tone = s[k] ? tone : ""; };
+    set("overdue", "crit"); set("today", "warn"); set("soon", ""); set("waiting", ""); set("done", "ok");
+  }
+  function renderToolbar() {
+    for (const b of document.querySelectorAll("#views button")) b.setAttribute("aria-pressed", String(b.dataset.view === ui.view));
+    const area = $("#filter-area");
+    area.innerHTML = `<option value="">All areas</option>` + Object.entries(CATS).map(([k, c]) => `<option value="${k}">${c.code} · ${esc(c.name)}</option>`).join("");
+    area.value = ui.cat;
+    const used = [...new Set([...tasks.values()].map(t => t.fw).filter(Boolean))].sort();
+    if (ui.fw && !used.includes(ui.fw)) used.push(ui.fw);
+    const fw = $("#filter-fw");
+    fw.innerHTML = `<option value="">All frameworks</option>` + used.map(f => `<option value="${esc(f)}">${esc(f)}</option>`).join("");
+    fw.value = ui.fw;
+    $("#quick").hidden = ro;
+    $("#new-task").hidden = ro;
+  }
+  function renderSync() {
+    const el = $("#sync");
+    let state = mode, text;
+    if (pending > 0 && db) { state = "saving"; text = "Saving…"; }
+    else if (mode === "browser" && localBlocked) { state = "local"; text = "Not saved in this browser"; }
+    else text = { connecting: "Connecting…", synced: ro ? "View only" : "All changes saved", browser: "Saved in this browser", local: "Not saved in this view", error: "Sync stopped, reload to reconnect" }[mode] || "";
+    el.dataset.state = state;
+    el.textContent = text;
+  }
+  function renderNotices() {
+    const out = [];
+    if (mode === "local") out.push(`<div class="notice warn"><p>Changes stay in this tab only. Open this page on claude.ai while signed in to save your tasks.</p></div>`);
+    if (mode === "browser" && localBlocked) out.push(`<div class="notice warn"><p>This browser is blocking storage for this file, so changes are lost when you close the tab. Open the page through a local web server instead, as described in the README.</p></div>`);
+    if (ro && db) out.push(`<div class="notice"><p>You can read this task list but not change it.</p></div>`);
+    const starters = [...tasks.values()].filter(t => t.starter).length;
+    if (starters && !ro) {
+      out.push(`<div class="notice"><p>${starters} starter task${starters === 1 ? " is" : "s are"} loaded as examples of a GRC week. Edit one and it becomes yours, or clear the rest.</p>
+        <div class="acts">${ui.confirmClear
+          ? `<span>Delete all ${starters} starter tasks?</span><button type="button" class="btn danger small" data-act="clear-yes">Delete them</button><button type="button" class="btn ghost small" data-act="clear-no">Keep</button>`
+          : `<button type="button" class="btn small" data-act="clear-ask">Clear starter tasks</button>`}</div></div>`);
+    }
+    $("#notices").innerHTML = out.join("");
+  }
+  function renderList(now) {
+    const host = $("#list");
+    const focusId = document.activeElement && host.contains(document.activeElement) ? document.activeElement.id : "";
+    if (!tasks.size) { host.innerHTML = emptyHTML(); return; }
+    const groups = buildGroups([...tasks.values()].filter(matches), now).filter(g => g.items.length);
+    host.innerHTML = groups.length
+      ? groups.map(g => `<section class="group" data-key="${g.key}"><h2>${esc(g.label)} <span class="count">${g.items.length}</span></h2><ul class="tasklist">${g.items.map(t => rowHTML(t, now)).join("")}</ul></section>`).join("")
+      : noneHTML();
+    if (focusId) { const el = document.getElementById(focusId); if (el) el.focus({ preventScroll: true }); }
+  }
+  const openTitles = () => new Set([...tasks.values()].filter(t => t.status !== "done").map(t => t.title.trim().toLowerCase()));
+  function renderLibrary() {
+    for (const b of document.querySelectorAll("#cadence button")) b.setAttribute("aria-pressed", String(b.dataset.lib === ui.lib));
+    const have = openTitles();
+    const items = LIBRARY.map((x, i) => ({ ...x, i })).filter(x => x.recur === ui.lib);
+    $("#lib-list").innerHTML = items.map(x => {
+      const ref = [x.fw, x.ctrl].filter(Boolean).join(" · ");
+      const inList = have.has(x.title.toLowerCase());
+      const action = ro ? "" : inList ? `<span class="in-list">In your list</span>` : `<button type="button" class="btn small" data-add="${x.i}" aria-label="Add ${esc(x.title)}">Add</button>`;
+      return `<li><div><p class="lib-title">${esc(x.title)}</p><p class="lib-ref"><span class="code">${CATS[x.cat].code}</span>${ref ? esc(ref) : "No control reference"}</p></div>${action}</li>`;
+    }).join("");
+    const missing = items.filter(x => !have.has(x.title.toLowerCase())).length;
+    $("#lib-all").innerHTML = !ro && missing > 1 ? `<button type="button" class="btn" data-add-all="${ui.lib}">Add all ${missing} ${RECUR[ui.lib].toLowerCase()} check-ins</button>` : "";
+  }
+  function render() {
+    const now = today();
+    lastDay = now;
+    renderHeader(now);
+    renderTiles(now);
+    renderToolbar();
+    renderNotices();
+    renderList(now);
+    renderLibrary();
+    renderSync();
+  }
+
+  /* Actions */
+  function toggleDone(id) {
+    const t = tasks.get(id);
+    if (!t || ro) return;
+    const prev = clean(t), now = today();
+    let next, msg;
+    if (t.recur !== "none" && t.status !== "done") {
+      const due = nextDue(t, now);
+      next = { ...prev, status: "todo", due, history: [now, ...t.history].slice(0, 12) };
+      msg = `Logged. Next due ${fmtLong(due)}.`;
+    } else if (t.status === "done") {
+      next = { ...prev, status: "todo", completedAt: "" };
+      msg = "Moved back to your open tasks.";
+    } else {
+      next = { ...prev, status: "done", completedAt: now };
+      msg = "Marked done.";
+    }
+    save(id, next);
+    toast(msg, () => save(id, prev));
+  }
+  function addFromLibrary(i, quiet) {
+    const x = LIBRARY[i];
+    if (!x || ro) return;
+    const due = firstDue(x.recur);
+    save(newId(), clean(norm("", { ...blank(), title: x.title, notes: x.notes, cat: x.cat, fw: x.fw, ctrl: x.ctrl, pri: x.pri, recur: x.recur, due })));
+    if (!quiet) toast(`Added. Repeats ${RECUR[x.recur].toLowerCase()}, first due ${fmtLong(due)}.`);
+  }
+  function addAll(recur) {
+    const have = openTitles();
+    let n = 0;
+    LIBRARY.forEach((x, i) => { if (x.recur === recur && !have.has(x.title.toLowerCase())) { addFromLibrary(i, true); n++; } });
+    if (n) toast(`Added ${n} ${RECUR[recur].toLowerCase()} check-ins.`);
+  }
+
+  /* Editor */
+  const editor = $("#editor");
+  let editingId = null;
+  function fillSelect(sel, map) { sel.innerHTML = Object.entries(map).map(([k, v]) => `<option value="${k}">${esc(typeof v === "string" ? v : v.code + " · " + v.name)}</option>`).join(""); }
+  fillSelect($("#f-cat"), CATS);
+  fillSelect($("#f-pri"), PRI);
+  fillSelect($("#f-recur"), RECUR);
+  fillSelect($("#f-status"), STATUS);
+  $("#fw-list").innerHTML = FRAMEWORKS.map(f => `<option value="${esc(f)}"></option>`).join("");
+  $("#codes").innerHTML = Object.values(CATS).map(c => `<div><dt><span class="code">${c.code}</span></dt><dd>${esc(c.name)}</dd></div>`).join("");
+
+  function openEditor(id, preset) {
+    const cur = id ? tasks.get(id) : null;
+    if (id && !cur) return;
+    editingId = id || null;
+    const t = cur || norm("", { ...blank(), ...preset });
+    $("#ed-title").textContent = cur ? (ro ? "Task details" : "Edit task") : "New task";
+    $("#f-title").value = t.title;
+    $("#f-cat").value = t.cat;
+    $("#f-pri").value = t.pri;
+    $("#f-due").value = t.due;
+    $("#f-recur").value = t.recur;
+    $("#f-fw").value = t.fw;
+    $("#f-ctrl").value = t.ctrl;
+    $("#f-status").value = t.status;
+    $("#f-owner").value = t.owner;
+    $("#f-evidence").value = t.evidence;
+    $("#f-notes").value = t.notes;
+    const hist = $("#ed-history");
+    hist.hidden = !(cur && cur.history.length);
+    if (cur && cur.history.length) hist.innerHTML = `Logged: <span class="ref">${cur.history.slice(0, 8).map(h => esc(fmtShort(h))).join(", ")}</span>`;
+    $("#ed-fields").disabled = ro;
+    $("#ed-save").hidden = ro;
+    $("#ed-delete").hidden = !cur || ro;
+    $("#ed-confirm").hidden = true;
+    try { editor.showModal(); } catch (e) { editor.setAttribute("open", ""); }
+    if (!ro) $("#f-title").focus();
+  }
+  function closeEditor() {
+    try { editor.close(); } catch (e) { editor.removeAttribute("open"); }
+  }
+  $("#ed-form").addEventListener("submit", e => {
+    e.preventDefault();
+    if (ro) return;
+    const title = $("#f-title").value.trim();
+    if (!title) { $("#f-title").focus(); return; }
+    const cur = editingId && tasks.get(editingId);
+    const base = cur ? clean(cur) : clean(blank());
+    const status = $("#f-status").value;
+    const body = {
+      ...base,
+      title,
+      notes: $("#f-notes").value.trim(),
+      cat: $("#f-cat").value,
+      pri: $("#f-pri").value,
+      status,
+      due: $("#f-due").value,
+      recur: $("#f-recur").value,
+      fw: $("#f-fw").value.trim(),
+      ctrl: $("#f-ctrl").value.trim(),
+      owner: $("#f-owner").value.trim(),
+      evidence: $("#f-evidence").value.trim(),
+      completedAt: status === "done" ? (base.status === "done" && base.completedAt ? base.completedAt : today()) : "",
+      starter: false,
+    };
+    save(cur ? editingId : newId(), body);
+    closeEditor();
+    toast(cur ? "Task saved." : "Task added.");
+  });
+  editor.addEventListener("click", e => {
+    if (e.target === editor || e.target.closest("[data-close]")) closeEditor();
+  });
+  $("#ed-delete").addEventListener("click", () => { $("#ed-confirm").hidden = false; $("#ed-delete").hidden = true; $("#ed-del-yes").focus(); });
+  $("#ed-del-no").addEventListener("click", () => { $("#ed-confirm").hidden = true; $("#ed-delete").hidden = false; });
+  $("#ed-del-yes").addEventListener("click", () => {
+    const cur = editingId && tasks.get(editingId);
+    if (!cur) { closeEditor(); return; }
+    const id = editingId, prev = clean(cur);
+    remove(id);
+    closeEditor();
+    toast("Task deleted.", () => save(id, prev));
+  });
+
+  /* Toast */
+  let toastTimer = 0;
+  function toast(msg, undo) {
+    $("#toast-msg").textContent = msg;
+    const btn = $("#toast-undo");
+    btn.hidden = !undo;
+    btn.onclick = undo ? () => { undo(); hideToast(); } : null;
+    $("#toast").hidden = false;
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(hideToast, 6000);
+  }
+  function hideToast() { $("#toast").hidden = true; }
+
+  /* Wiring */
+  $("#views").addEventListener("click", e => {
+    const b = e.target.closest("button[data-view]");
+    if (!b) return;
+    ui.view = b.dataset.view; prefs.set("view", ui.view); render();
+  });
+  $(".tiles").addEventListener("click", e => {
+    const b = e.target.closest("[data-go]");
+    if (!b) return;
+    ui.view = b.dataset.go; prefs.set("view", ui.view); render();
+  });
+  $("#filter-area").addEventListener("change", e => { ui.cat = e.target.value; prefs.set("cat", ui.cat); render(); });
+  $("#filter-fw").addEventListener("change", e => { ui.fw = e.target.value; prefs.set("fw", ui.fw); render(); });
+  $("#q").addEventListener("input", e => { ui.q = e.target.value.trim().toLowerCase(); renderList(today()); });
+  $("#new-task").addEventListener("click", () => openEditor(null));
+  $("#quick").addEventListener("submit", e => {
+    e.preventDefault();
+    const input = $("#quick-title"), title = input.value.trim();
+    if (!title || ro) return;
+    const id = newId();
+    save(id, clean(norm("", { ...blank(), title })));
+    input.value = "";
+    toast("Added to today.", () => remove(id));
+  });
+  $("#list").addEventListener("change", e => {
+    if (!e.target.classList.contains("check")) return;
+    const row = e.target.closest(".task");
+    if (row) toggleDone(row.dataset.id);
+  });
+  $("#list").addEventListener("click", e => {
+    const b = e.target.closest("[data-act]");
+    if (!b) return;
+    const act = b.dataset.act;
+    if (act === "edit") openEditor(b.closest(".task").dataset.id);
+    else if (act === "add-daily") addAll("daily");
+    else if (act === "clear-filters") {
+      ui.cat = ""; ui.fw = ""; ui.q = ""; $("#q").value = "";
+      prefs.set("cat", ""); prefs.set("fw", ""); render();
+    }
+  });
+  $("#notices").addEventListener("click", e => {
+    const b = e.target.closest("[data-act]");
+    if (!b) return;
+    if (b.dataset.act === "clear-ask") { ui.confirmClear = true; renderNotices(); }
+    else if (b.dataset.act === "clear-no") { ui.confirmClear = false; renderNotices(); }
+    else if (b.dataset.act === "clear-yes") {
+      ui.confirmClear = false;
+      const ids = [...tasks.values()].filter(t => t.starter).map(t => t.id);
+      ids.forEach(remove);
+      toast(`Cleared ${ids.length} starter task${ids.length === 1 ? "" : "s"}.`);
+    }
+  });
+  $("#cadence").addEventListener("click", e => {
+    const b = e.target.closest("button[data-lib]");
+    if (!b) return;
+    ui.lib = b.dataset.lib; prefs.set("lib", ui.lib); renderLibrary();
+  });
+  $("#library").addEventListener("click", e => {
+    const add = e.target.closest("[data-add]");
+    if (add) { addFromLibrary(Number(add.dataset.add)); return; }
+    const all = e.target.closest("[data-add-all]");
+    if (all) addAll(all.dataset.addAll);
+  });
+
+  /* Roll the desk over at midnight without a reload. */
+  const rollover = () => { if (today() !== lastDay) render(); };
+  setInterval(rollover, 60000);
+  document.addEventListener("visibilitychange", rollover);
+  /* Keep two tabs of a local copy in step. */
+  window.addEventListener("storage", e => { if (mode === "browser" && e.key === "grc-desk:tasks") { loadLocal(); render(); } });
+
+  render();
+  boot();
+})();
+</script>
+</body>
+</html>
