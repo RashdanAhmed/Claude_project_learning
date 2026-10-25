@@ -3,6 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%230D5B6C'/%3E%3Cpath d='M9 16.5l4.5 4.5L23 11' stroke='white' stroke-width='3' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
 <style>:root{color-scheme:light;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style>
 <title>GRC Task Desk</title>
 <meta name="claude:viewport-fit-sides" content="cover">
@@ -94,9 +95,9 @@ h1 { margin: 0; font-family: var(--f-display); font-weight: 600; font-size: 34px
 .top-actions input[type="search"] { width: 250px; max-width: 100%; }
 .sync { display: inline-flex; align-items: center; gap: 6px; font-family: var(--f-mono); font-size: 12px; color: var(--muted); margin-right: 4px; }
 .sync::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: var(--line-strong); }
-.sync[data-state="synced"]::before, .sync[data-state="browser"]::before { background: var(--ok); }
+.sync[data-state="synced"]::before, .sync[data-state="browser"]::before, .sync[data-state="server"]::before { background: var(--ok); }
 .sync[data-state="saving"]::before { background: var(--accent); }
-.sync[data-state="local"]::before, .sync[data-state="error"]::before { background: var(--warn); }
+.sync[data-state="local"]::before, .sync[data-state="error"]::before, .sync[data-state="offline"]::before { background: var(--warn); }
 
 /* Controls */
 .btn {
@@ -105,7 +106,7 @@ h1 { margin: 0; font-family: var(--f-display); font-weight: 600; font-size: 34px
   font: 500 14px/1 var(--f-body);
   color: var(--ink); background: var(--surface);
   border: 1px solid var(--line-strong); border-radius: 8px;
-  cursor: pointer; white-space: nowrap;
+  cursor: pointer; white-space: nowrap; text-decoration: none;
 }
 .btn:hover { border-color: var(--accent); }
 .btn:disabled { opacity: .55; cursor: default; }
@@ -358,7 +359,6 @@ kbd { font-family: var(--f-mono); font-size: 12px; padding: 0 4px; border: 1px s
 </style>
 </head>
 <body>
-
 <div class="wrap">
   <header class="top">
     <div>
@@ -420,6 +420,11 @@ kbd { font-family: var(--f-mono); font-size: 12px; padding: 0 4px; border: 1px s
           <input type="text" id="project-name" placeholder="e.g. ISO 27001 certification" maxlength="80">
           <button type="submit" class="btn">Add</button>
         </form>
+        <div id="backup" hidden>
+          <h3>Backup</h3>
+          <p class="sub">Download your tasks, projects and pictures as one zip file. To restore it, stop the app and unzip it into the app's data folder.</p>
+          <a class="btn small" id="backup-link" href="#" download>Download backup</a>
+        </div>
       </section>
       <section class="panel" id="library">
         <h2>Routine library</h2>
@@ -547,8 +552,10 @@ kbd { font-family: var(--f-mono); font-size: 12px; padding: 0 4px; border: 1px s
   const ACCEPT = ["image/png", "image/jpeg", "image/gif", "image/webp"];
   const MAX_PIC = 20 * 1024 * 1024;
   const NO_PROJECT = "__none";
-  /* On claude.ai the viewer provides window.claude; a copy opened from disk does not. */
-  const env = window.claude && typeof window.claude.use === "function" ? "claude" : "browser";
+  /* Three hosts: the local app server (its copy carries the API meta tag), claude.ai (the viewer
+     provides window.claude), or a copy opened straight from disk. */
+  const API = (document.querySelector('meta[name="grc-task-desk-api"]') || {}).content || "";
+  const env = API ? "server" : window.claude && typeof window.claude.use === "function" ? "claude" : "browser";
 
   const LIBRARY = [
     { recur: "daily", title: "Check the incident log for items with a regulatory clock", cat: "incident", fw: "GDPR", ctrl: "Art. 33", pri: "high", notes: "Personal data breaches go to the supervisory authority within 72 hours of becoming aware." },
@@ -644,10 +651,10 @@ kbd { font-family: var(--f-mono); font-size: 12px; padding: 0 4px; border: 1px s
     removing: "",
   };
 
-  /* Store: on claude.ai the db capability keeps tasks and projects. A copy opened from disk
-     keeps them in this browser's localStorage. Inside a claude.ai view without db, the page
-     runs in this tab only. */
-  let db = null, ro = false, mode = "connecting", pending = 0, lastDay = today(), localBlocked = false;
+  /* Store: the local app server keeps tasks and projects in its database. On claude.ai the db
+     capability keeps them. A copy opened from disk keeps them in this browser's localStorage.
+     Inside a claude.ai view without db, the page runs in this tab only. */
+  let db = null, ro = false, mode = "connecting", pending = 0, lastDay = today(), localBlocked = false, rev = null;
   const tasks = new Map(), projects = new Map();
   const queues = {};
 
@@ -681,7 +688,7 @@ kbd { font-family: var(--f-mono); font-size: 12px; padding: 0 4px; border: 1px s
     title: "", cat: "compliance", pri: "medium", status: "todo", due: "", recur: "none",
     project: projects.has(ui.project) ? ui.project : "", created: Date.now(),
   });
-  const newId = coll => db ? db.collection(coll).doc().id : "local-" + Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+  const newId = coll => db ? db.collection(coll).doc().id : Date.now().toString(36) + Math.random().toString(36).slice(2, 10);
   const projectList = () => [...projects.values()].sort((a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: "base" }));
   const projectName = id => (projects.get(id) || {}).name || "";
 
@@ -696,6 +703,7 @@ kbd { font-family: var(--f-mono); font-size: 12px; padding: 0 4px; border: 1px s
     if (ro) return;
     MAPS[coll].set(id, NORM[coll](id, body));
     render();
+    if (env === "server") { track(coll + "/" + id, () => api("PUT", `/${coll}/${encodeURIComponent(id)}`, body).then(noteRevision)); return; }
     if (!db) { persistLocal(coll); return; }
     const ref = db.collection(coll).doc(id);
     track(coll + "/" + id, () => ref.set(body));
@@ -704,9 +712,47 @@ kbd { font-family: var(--f-mono); font-size: 12px; padding: 0 4px; border: 1px s
     if (ro) return;
     MAPS[coll].delete(id);
     render();
+    if (env === "server") { track(coll + "/" + id, () => api("DELETE", `/${coll}/${encodeURIComponent(id)}`).then(noteRevision)); return; }
     if (!db) { persistLocal(coll); return; }
     const ref = db.collection(coll).doc(id);
     track(coll + "/" + id, () => ref.delete());
+  }
+
+  /* Local app server: a small JSON API next to the page. */
+  async function api(method, path, body) {
+    const init = { method, headers: {} };
+    if (body instanceof Blob) { init.body = body; init.headers["Content-Type"] = body.type || "application/octet-stream"; }
+    else if (body !== undefined) { init.body = JSON.stringify(body); init.headers["Content-Type"] = "application/json"; }
+    let r;
+    try { r = await fetch(API + path, init); } catch (e) { throw { code: "offline" }; }
+    const data = r.status === 204 ? null : await r.json().catch(() => null);
+    if (!r.ok) throw { code: "http", status: r.status, message: (data && data.error) || "" };
+    return data;
+  }
+  function noteRevision(r) {
+    if (r && r.revision != null) rev = r.revision;
+    if (mode === "offline") { mode = "server"; render(); }
+  }
+  async function loadServer() {
+    const s = await api("GET", "/state");
+    for (const coll of ["tasks", "projects"]) {
+      MAPS[coll].clear();
+      for (const b of s[coll] || []) if (b && typeof b.id === "string") MAPS[coll].set(b.id, NORM[coll](b.id, b));
+    }
+    rev = s.revision;
+  }
+  /* Pick up changes made in another tab or browser, and notice when the server stops. */
+  async function poll() {
+    if (document.hidden || pending > 0) return;
+    try {
+      const r = await api("GET", "/revision");
+      const changed = r.revision !== rev, wasOffline = mode === "offline";
+      if (changed) await loadServer();
+      mode = "server";
+      if (changed || wasOffline) render();
+    } catch (e) {
+      if (mode !== "offline") { mode = "offline"; render(); }
+    }
   }
   const save = (id, body) => put("tasks", id, body);
   function removeTask(id) {
@@ -736,7 +782,12 @@ kbd { font-family: var(--f-mono); font-size: 12px; padding: 0 4px; border: 1px s
   }
   function onWriteError(e) {
     const code = e && e.code;
-    if (code === "invalid_argument" || code === "not_granted") {
+    if (code === "offline") {
+      mode = "offline"; render();
+      toast("The GRC Task Desk server isn't running, so that change wasn't saved.");
+    } else if (code === "http") {
+      toast(e.status === 413 ? "That's too large to save." : "That change didn't save. Reload the page and try again.");
+    } else if (code === "invalid_argument" || code === "not_granted") {
       ro = true; render();
       toast("This list is view-only for you, so that change wasn't saved.");
     } else if (code === "quota_exceeded") {
@@ -751,8 +802,13 @@ kbd { font-family: var(--f-mono); font-size: 12px; padding: 0 4px; border: 1px s
   /* Pictures: artifact assets on claude.ai, IndexedDB in a copy opened from disk. Tasks keep ids only. */
   const pics = {
     canAdd: false, assets: null, idb: null, urls: new Map(),
-    src(id) { return env === "claude" ? "/_blob/" + encodeURIComponent(id) : (this.urls.get(id) || ""); },
+    src(id) {
+      if (env === "claude") return "/_blob/" + encodeURIComponent(id);
+      if (env === "server") return API + "/pictures/" + encodeURIComponent(id);
+      return this.urls.get(id) || "";
+    },
     async put(file) {
+      if (env === "server") return (await api("POST", "/pictures", file)).id;
       if (this.assets) return (await this.assets.upload(file)).id;
       if (!this.idb) throw { code: "unavailable" };
       const id = "pic-" + Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
@@ -762,7 +818,8 @@ kbd { font-family: var(--f-mono); font-size: 12px; padding: 0 4px; border: 1px s
     },
     async del(id) {
       try {
-        if (this.assets) await this.assets.delete(id);
+        if (env === "server") await api("DELETE", "/pictures/" + encodeURIComponent(id));
+        else if (this.assets) await this.assets.delete(id);
         else if (this.idb) {
           await idbDo("readwrite", s => s.delete(id));
           const u = this.urls.get(id);
@@ -800,7 +857,7 @@ kbd { font-family: var(--f-mono); font-size: 12px; padding: 0 4px; border: 1px s
   }
   const imgTag = (id, alt = "") => { const src = pics.src(id); return `<img data-pic="${esc(id)}"${src ? ` src="${esc(src)}"` : ""} alt="${esc(alt)}" loading="lazy">`; };
   function hydratePics(root) {
-    if (env === "claude") return;
+    if (env !== "browser") return;
     for (const img of root.querySelectorAll("img[data-pic]:not([src])")) {
       pics.load(img.dataset.pic).then(u => { if (u) img.src = u; else img.classList.add("missing"); });
     }
@@ -811,6 +868,9 @@ kbd { font-family: var(--f-mono); font-size: 12px; padding: 0 4px; border: 1px s
   }, true);
   function picError(e) {
     const c = e && e.code;
+    if (c === "offline") return "The GRC Task Desk server isn't running, so the picture wasn't saved.";
+    if (c === "http" && e.status === 415) return "Use a PNG, JPEG, GIF or WebP picture.";
+    if (c === "http" && e.status === 413) return "That picture is over 20 MB. Crop or compress it and try again.";
     if (c === "too_large") return "That picture is over 20 MB. Crop or compress it and try again.";
     if (c === "unsupported_type") return "Use a PNG, JPEG, GIF or WebP picture.";
     if (c === "quota_or_state") return "Picture storage is full. Remove pictures you no longer need.";
@@ -820,6 +880,14 @@ kbd { font-family: var(--f-mono); font-size: 12px; padding: 0 4px; border: 1px s
   }
 
   async function boot() {
+    if (env === "server") {
+      try { await loadServer(); mode = "server"; } catch (e) { mode = "offline"; }
+      pics.canAdd = true;
+      render();
+      setInterval(poll, 10000);
+      document.addEventListener("visibilitychange", () => { if (!document.hidden) poll(); });
+      return;
+    }
     if (env === "browser") {
       mode = "browser";
       loadLocal();
@@ -1010,15 +1078,20 @@ kbd { font-family: var(--f-mono); font-size: 12px; padding: 0 4px; border: 1px s
   function renderSync() {
     const el = $("#sync");
     let state = mode, text;
-    if (pending > 0 && db) { state = "saving"; text = "Saving…"; }
+    if (pending > 0 && (db || env === "server")) { state = "saving"; text = "Saving…"; }
     else if (mode === "browser" && localBlocked) { state = "local"; text = "Not saved in this browser"; }
-    else text = { connecting: "Connecting…", synced: ro ? "View only" : "All changes saved", browser: "Saved in this browser", local: "Not saved in this view", error: "Sync stopped, reload to reconnect" }[mode] || "";
+    else text = {
+      connecting: "Connecting…", synced: ro ? "View only" : "All changes saved", browser: "Saved in this browser",
+      server: "Saved on this computer", offline: "Server not responding",
+      local: "Not saved in this view", error: "Sync stopped, reload to reconnect",
+    }[mode] || "";
     el.dataset.state = state;
     el.textContent = text;
   }
   function renderNotices() {
     const out = [];
     if (mode === "local") out.push(`<div class="notice warn"><p>Changes stay in this tab only. Open this page on claude.ai while signed in to save your tasks.</p></div>`);
+    if (mode === "offline") out.push(`<div class="notice warn"><p>The GRC Task Desk server isn't responding, so changes can't be saved. Start the app again, then reload this page.</p></div>`);
     if (mode === "browser" && localBlocked) out.push(`<div class="notice warn"><p>This browser is blocking storage for this file, so changes are lost when you close the tab. Open the page through a local web server instead, as described in the README.</p></div>`);
     if (ro && db) out.push(`<div class="notice"><p>You can read this task list but not change it.</p></div>`);
     const starters = [...tasks.values()].filter(t => t.starter).length;
@@ -1123,6 +1196,7 @@ kbd { font-family: var(--f-mono); font-size: 12px; padding: 0 4px; border: 1px s
   fillSelect($("#f-status"), STATUS);
   $("#fw-list").innerHTML = FRAMEWORKS.map(f => `<option value="${esc(f)}"></option>`).join("");
   $("#codes").innerHTML = Object.values(CATS).map(c => `<div><dt><span class="code">${c.code}</span></dt><dd>${esc(c.name)}</dd></div>`).join("");
+  if (env === "server") { $("#backup").hidden = false; $("#backup-link").href = API + "/backup"; }
 
   function showErrors(title, due) {
     $("#err-title").hidden = title; $("#f-title").setAttribute("aria-invalid", String(!title));

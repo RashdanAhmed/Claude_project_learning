@@ -1,0 +1,1528 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="grc-task-desk-api" content="/api">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%230D5B6C'/%3E%3Cpath d='M9 16.5l4.5 4.5L23 11' stroke='white' stroke-width='3' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
+<style>:root{color-scheme:light;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style>
+<title>GRC Task Desk</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans+Condensed:wght@500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+/* Layout: a working desk. Triage strip on top, task register on the left, configuration and routine library on the right. */
+:root {
+  --bg: #F1F4F4;
+  --surface: #FFFFFF;
+  --sunken: #E6ECED;
+  --ink: #14232A;
+  --muted: #56676E;
+  --line: #D4DDDF;
+  --line-strong: #B5C3C7;
+  --accent: #0D5B6C;
+  --accent-hover: #09495A;
+  --accent-soft: #DBEAEE;
+  --on-accent: #FFFFFF;
+  --crit: #B3261E;
+  --crit-soft: #FBE5E2;
+  --warn: #8C5900;
+  --warn-soft: #FAEED3;
+  --ok: #23704A;
+  --ok-soft: #DDF0E4;
+  --wait: #4A53A0;
+  --wait-soft: #E5E7F6;
+  --scrim: rgba(10, 24, 30, .45);
+  --shadow: 0 1px 2px rgba(12, 32, 40, .06), 0 10px 30px rgba(12, 32, 40, .10);
+  --shadow-sm: 0 1px 2px rgba(12, 32, 40, .10);
+
+  --f-display: "IBM Plex Sans Condensed", "Arial Narrow", system-ui, sans-serif;
+  --f-body: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --f-mono: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0E1518; --surface: #152025; --sunken: #1C2A30; --ink: #E2EAEC; --muted: #93A4AA;
+    --line: #273840; --line-strong: #3A4F57; --accent: #62B6C6; --accent-hover: #7FC6D3;
+    --accent-soft: #163942; --on-accent: #06222A; --crit: #F0877E; --crit-soft: #3B1D1B;
+    --warn: #E5B061; --warn-soft: #362A15; --ok: #7BC897; --ok-soft: #163026;
+    --wait: #A6B0F0; --wait-soft: #232A4B; --scrim: rgba(0, 0, 0, .6);
+    --shadow: 0 1px 2px rgba(0, 0, 0, .4), 0 12px 32px rgba(0, 0, 0, .45);
+    --shadow-sm: 0 1px 2px rgba(0, 0, 0, .5);
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0E1518; --surface: #152025; --sunken: #1C2A30; --ink: #E2EAEC; --muted: #93A4AA;
+  --line: #273840; --line-strong: #3A4F57; --accent: #62B6C6; --accent-hover: #7FC6D3;
+  --accent-soft: #163942; --on-accent: #06222A; --crit: #F0877E; --crit-soft: #3B1D1B;
+  --warn: #E5B061; --warn-soft: #362A15; --ok: #7BC897; --ok-soft: #163026;
+  --wait: #A6B0F0; --wait-soft: #232A4B; --scrim: rgba(0, 0, 0, .6);
+  --shadow: 0 1px 2px rgba(0, 0, 0, .4), 0 12px 32px rgba(0, 0, 0, .45);
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, .5);
+  color-scheme: dark;
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+body {
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--f-body);
+  font-size: 14px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.sr { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
+
+.wrap {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding-block: 28px 56px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  display: grid;
+  gap: 22px;
+}
+
+/* Header */
+.top { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 16px 24px; }
+.eyebrow { margin: 0 0 6px; font-family: var(--f-mono); font-size: 12px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+h1 { margin: 0; font-family: var(--f-display); font-weight: 600; font-size: 34px; line-height: 1.05; letter-spacing: -.01em; text-wrap: balance; }
+.dateline { margin: 8px 0 0; display: flex; flex-wrap: wrap; gap: 4px 16px; color: var(--muted); }
+.dateline .mono { font-family: var(--f-mono); font-size: 13px; }
+.top-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 10px; }
+.top-actions input[type="search"] { width: 250px; max-width: 100%; }
+.sync { display: inline-flex; align-items: center; gap: 6px; font-family: var(--f-mono); font-size: 12px; color: var(--muted); margin-right: 4px; }
+.sync::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: var(--line-strong); }
+.sync[data-state="synced"]::before, .sync[data-state="browser"]::before, .sync[data-state="server"]::before { background: var(--ok); }
+.sync[data-state="saving"]::before { background: var(--accent); }
+.sync[data-state="local"]::before, .sync[data-state="error"]::before, .sync[data-state="offline"]::before { background: var(--warn); }
+
+/* Controls */
+.btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+  min-height: 36px; padding: 8px 14px;
+  font: 500 14px/1 var(--f-body);
+  color: var(--ink); background: var(--surface);
+  border: 1px solid var(--line-strong); border-radius: 8px;
+  cursor: pointer; white-space: nowrap; text-decoration: none;
+}
+.btn:hover { border-color: var(--accent); }
+.btn:disabled { opacity: .55; cursor: default; }
+.btn.primary { background: var(--accent); border-color: var(--accent); color: var(--on-accent); }
+.btn.primary:hover:not(:disabled) { background: var(--accent-hover); border-color: var(--accent-hover); }
+.btn.ghost { background: transparent; border-color: transparent; color: var(--muted); }
+.btn.ghost:hover { color: var(--ink); background: var(--sunken); }
+.btn.small { min-height: 28px; padding: 5px 10px; font-size: 13px; }
+.btn.danger { background: var(--crit); border-color: var(--crit); color: var(--on-accent); }
+.btn.danger-ghost { background: transparent; border-color: transparent; color: var(--crit); }
+.btn.danger-ghost:hover { background: var(--crit-soft); }
+input[type="text"], input[type="search"], input[type="date"], select, textarea {
+  width: 100%; min-height: 36px; padding: 7px 10px;
+  font: 400 14px/1.4 var(--f-body);
+  color: var(--ink); background: var(--surface);
+  border: 1px solid var(--line-strong); border-radius: 8px;
+}
+textarea { resize: vertical; min-height: 110px; }
+select { width: auto; padding-right: 28px; }
+input::placeholder, textarea::placeholder { color: var(--muted); opacity: .8; }
+[aria-invalid="true"] { border-color: var(--crit); }
+
+/* Triage strip */
+.tiles {
+  display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 1px;
+  background: var(--line); border: 1px solid var(--line); border-radius: 12px; overflow: hidden;
+}
+.tile {
+  display: grid; gap: 2px; padding: 14px 16px; text-align: left;
+  font: inherit; color: var(--ink); background: var(--surface); border: 0; cursor: pointer;
+}
+.tile:hover { background: var(--sunken); }
+.tile:focus-visible { outline-offset: -3px; }
+.tile .n { font-family: var(--f-mono); font-size: 30px; font-weight: 500; line-height: 1.1; font-variant-numeric: tabular-nums; }
+.tile .l { font-size: 12px; font-weight: 500; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
+.tile[data-tone="crit"] .n { color: var(--crit); }
+.tile[data-tone="warn"] .n { color: var(--warn); }
+.tile[data-tone="ok"] .n { color: var(--ok); }
+
+/* Desk layout */
+.layout { display: grid; grid-template-columns: minmax(0, 1fr) 340px; gap: 28px; align-items: start; }
+main { display: grid; gap: 16px; min-width: 0; }
+aside { display: grid; gap: 16px; min-width: 0; }
+
+.toolbar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px 12px; }
+.views { display: flex; flex-wrap: wrap; gap: 2px; padding: 3px; background: var(--sunken); border-radius: 10px; }
+.views button {
+  min-height: 32px; padding: 7px 12px; border: 0; border-radius: 8px;
+  font: 500 13px/1 var(--f-body); color: var(--muted); background: transparent; cursor: pointer;
+}
+.views button:hover { color: var(--ink); }
+.views button[aria-pressed="true"] { background: var(--surface); color: var(--ink); box-shadow: var(--shadow-sm); }
+.filters { display: flex; gap: 8px; }
+.filters select { max-width: 260px; }
+
+.quick { display: flex; gap: 8px; }
+.quick input { flex: 1; min-width: 0; }
+
+.notices { display: grid; gap: 8px; }
+.notices:empty { display: none; }
+.notice {
+  display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 14px;
+  padding: 10px 14px; border-radius: 10px; background: var(--accent-soft); font-size: 13px;
+}
+.notice.warn { background: var(--warn-soft); }
+.notice p { margin: 0; max-width: 70ch; }
+.notice .acts { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+
+/* Task register */
+.list { display: grid; gap: 22px; }
+.group { display: grid; gap: 8px; }
+.group h2 {
+  margin: 0; display: flex; align-items: baseline; gap: 8px;
+  font-family: var(--f-display); font-size: 14px; font-weight: 600; letter-spacing: .07em; text-transform: uppercase;
+}
+.group h2 .count { font-family: var(--f-mono); font-weight: 400; letter-spacing: 0; color: var(--muted); }
+.group[data-key="overdue"] h2 { color: var(--crit); }
+.group[data-key="today"] h2 { color: var(--warn); }
+.tasklist { list-style: none; margin: 0; padding: 0; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; }
+.task { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 4px 12px; align-items: start; padding: 12px 14px; }
+.task + .task { border-top: 1px solid var(--line); }
+.check { width: 18px; height: 18px; margin: 3px 0 0; accent-color: var(--accent); cursor: pointer; }
+.check:disabled { cursor: default; }
+.body { min-width: 0; }
+.title {
+  all: unset; cursor: pointer; display: inline;
+  font-size: 15px; font-weight: 500; line-height: 1.35; color: var(--ink); overflow-wrap: anywhere;
+}
+.title:hover { text-decoration: underline; text-decoration-color: var(--line-strong); text-underline-offset: 3px; }
+.title:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 2px; }
+.notes {
+  margin: 3px 0 0; color: var(--muted); font-size: 13px; white-space: pre-line; cursor: pointer;
+  display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; overflow-wrap: anywhere;
+}
+.meta { margin-top: 6px; display: flex; flex-wrap: wrap; align-items: center; gap: 4px 10px; font-size: 12.5px; color: var(--muted); }
+.proj { font-weight: 600; color: var(--accent); overflow-wrap: anywhere; }
+.proj::before { content: ""; display: inline-block; width: 7px; height: 7px; margin-right: 6px; border-radius: 2px; background: currentColor; vertical-align: 1px; }
+.code {
+  display: inline-block; padding: 0 5px; border: 1px solid var(--line-strong); border-radius: 4px;
+  font-family: var(--f-mono); font-size: 11px; font-weight: 500; letter-spacing: .04em; line-height: 17px; color: var(--ink);
+}
+.ref { font-family: var(--f-mono); font-size: 12px; }
+.meta a { color: var(--accent); text-underline-offset: 2px; }
+.thumbs { margin-top: 8px; display: flex; flex-wrap: wrap; gap: 6px; }
+.thumb {
+  width: 56px; height: 56px; padding: 0; overflow: hidden; cursor: zoom-in;
+  background: var(--sunken); border: 1px solid var(--line); border-radius: 6px;
+}
+.thumb img { display: block; width: 100%; height: 100%; object-fit: cover; }
+.thumb.more { cursor: pointer; font: 500 13px var(--f-mono); color: var(--muted); }
+img.missing { visibility: hidden; }
+.side { display: grid; justify-items: end; gap: 6px; text-align: right; }
+.due { font-family: var(--f-mono); font-size: 12px; white-space: nowrap; color: var(--muted); }
+.due[data-tone="crit"] { color: var(--crit); font-weight: 500; }
+.due[data-tone="warn"] { color: var(--warn); font-weight: 500; }
+.due[data-tone="soon"] { color: var(--ink); }
+.pills { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 4px; }
+.pill { padding: 1px 8px; border-radius: 999px; font-size: 12px; font-weight: 500; white-space: nowrap; }
+.pill.high { background: var(--crit-soft); color: var(--crit); }
+.pill.doing { background: var(--accent-soft); color: var(--accent); }
+.pill.waiting { background: var(--wait-soft); color: var(--wait); }
+.task.is-done .title { text-decoration: line-through; color: var(--muted); }
+
+.empty {
+  display: grid; justify-items: start; gap: 10px; padding: 28px 24px;
+  background: var(--surface); border: 1px dashed var(--line-strong); border-radius: 12px;
+}
+.empty h3 { margin: 0; font-family: var(--f-display); font-size: 21px; font-weight: 600; }
+.empty p { margin: 0; max-width: 58ch; color: var(--muted); }
+.empty .acts { display: flex; flex-wrap: wrap; gap: 8px; }
+
+/* Side panels */
+.panel { padding: 16px 18px; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; }
+.panel h2 { margin: 0; font-family: var(--f-display); font-size: 19px; font-weight: 600; }
+.panel h3 { margin: 12px 0 0; font-size: 12px; font-weight: 600; letter-spacing: .07em; text-transform: uppercase; color: var(--muted); }
+.panel .sub { margin: 4px 0 12px; color: var(--muted); font-size: 13px; }
+.projects { list-style: none; margin: 0; padding: 0; border-top: 1px solid var(--line); }
+.proj-row { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 6px 10px; padding: 9px 0; border-bottom: 1px solid var(--line); }
+.proj-row.editing input { flex: 1 1 160px; min-width: 0; }
+.proj-info { min-width: 0; flex: 1 1 140px; }
+.proj-name { margin: 0; font-weight: 500; font-size: 13.5px; overflow-wrap: anywhere; }
+.proj-count { margin: 1px 0 0; font-family: var(--f-mono); font-size: 11.5px; color: var(--muted); }
+.proj-row .confirm { margin: 0; flex: 1 1 100%; font-size: 13px; }
+.proj-row .acts { display: flex; gap: 2px; }
+.proj-empty { padding: 10px 0; color: var(--muted); font-size: 13px; border-bottom: 1px solid var(--line); }
+.add-project { display: flex; gap: 8px; margin-top: 12px; }
+.add-project input { flex: 1; min-width: 0; }
+.cadence { display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: 4px; }
+.cadence button {
+  min-height: 28px; padding: 4px 10px; border: 1px solid var(--line); border-radius: 999px;
+  font: 500 12.5px/1 var(--f-body); color: var(--muted); background: transparent; cursor: pointer;
+}
+.cadence button:hover { color: var(--ink); border-color: var(--line-strong); }
+.cadence button[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: var(--on-accent); }
+.lib { list-style: none; margin: 0; padding: 0; }
+.lib li { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 10px; padding: 10px 0; border-bottom: 1px solid var(--line); }
+.lib-title { margin: 0; font-size: 13.5px; font-weight: 500; line-height: 1.35; }
+.lib-ref { margin: 4px 0 0; display: flex; flex-wrap: wrap; align-items: center; gap: 6px; font-family: var(--f-mono); font-size: 11.5px; color: var(--muted); }
+.in-list { font-size: 12px; color: var(--ok); white-space: nowrap; }
+.codes { margin: 10px 0 0; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px 12px; }
+.codes div { display: flex; align-items: center; gap: 8px; min-width: 0; }
+.codes dt { flex: none; }
+.codes dd { margin: 0; font-size: 12.5px; color: var(--muted); line-height: 1.3; }
+
+.foot { color: var(--muted); font-size: 12.5px; max-width: 80ch; }
+
+/* Dialogs */
+dialog {
+  width: min(640px, calc(100vw - 32px)); max-height: calc(100vh - 32px); padding: 0; overflow: auto;
+  color: var(--ink); background: var(--surface); border: 1px solid var(--line); border-radius: 14px; box-shadow: var(--shadow);
+}
+dialog::backdrop { background: rgba(10, 24, 30, .5); background: var(--scrim, rgba(10, 24, 30, .5)); }
+.ed-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 16px 20px; border-bottom: 1px solid var(--line); }
+.ed-head h2 { margin: 0; font-family: var(--f-display); font-size: 20px; font-weight: 600; }
+.icon-btn { flex: none; width: 32px; height: 32px; border: 0; border-radius: 8px; background: transparent; color: var(--muted); font-size: 22px; line-height: 1; cursor: pointer; }
+.icon-btn:hover { background: var(--sunken); color: var(--ink); }
+fieldset { margin: 0; padding: 0; border: 0; min-width: 0; }
+.fields { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px 16px; padding: 16px 20px; }
+.field { display: grid; gap: 4px; align-content: start; min-width: 0; }
+.field > span, .field-label { font-size: 12.5px; font-weight: 500; color: var(--muted); }
+.field-label em { font-style: normal; color: var(--crit); }
+.field select { width: 100%; }
+.field-error, .hint { margin: 0; font-size: 12.5px; }
+.field-error { color: var(--crit); }
+.hint { color: var(--muted); }
+.span2 { grid-column: 1 / -1; }
+.fields-head {
+  margin: 6px 0 -2px; padding-top: 12px; border-top: 1px solid var(--line);
+  font-size: 12px; font-weight: 600; letter-spacing: .07em; text-transform: uppercase; color: var(--muted);
+}
+.pic-zone {
+  display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 12px;
+  padding: 12px 14px; border: 1.5px dashed var(--line-strong); border-radius: 10px; font-size: 13px; color: var(--muted);
+}
+.pic-zone.over { border-color: var(--accent); background: var(--accent-soft); color: var(--ink); }
+.pic-zone p { margin: 0; }
+kbd { font-family: var(--f-mono); font-size: 12px; padding: 0 4px; border: 1px solid var(--line-strong); border-radius: 4px; color: var(--ink); }
+.ed-pics { display: grid; grid-template-columns: repeat(auto-fill, minmax(88px, 1fr)); gap: 8px; }
+.ed-pics:empty { display: none; }
+.ed-thumb { position: relative; aspect-ratio: 1; max-width: 100%; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; background: var(--sunken); }
+.ed-thumb.uploading { display: grid; place-items: center; font-size: 12px; color: var(--muted); }
+.thumb-open { display: block; width: 100%; height: 100%; padding: 0; border: 0; background: transparent; cursor: zoom-in; }
+.thumb-open img { display: block; width: 100%; height: 100%; object-fit: cover; }
+.thumb-x {
+  position: absolute; top: 4px; right: 4px; width: 24px; height: 24px; padding: 0;
+  font-size: 16px; line-height: 1; color: var(--ink); background: var(--surface); border: 1px solid var(--line-strong); border-radius: 50%; cursor: pointer;
+}
+.thumb-x:hover { color: var(--crit); border-color: var(--crit); }
+.ed-history { margin: 0; padding: 0 20px 12px; font-size: 12.5px; color: var(--muted); }
+.ed-history .ref { color: var(--ink); }
+.ed-foot { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px; padding: 12px 20px 16px; border-top: 1px solid var(--line); }
+.ed-foot .acts, .del-zone, #ed-confirm { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+#ed-confirm { font-size: 13px; }
+
+.viewer { width: min(1000px, calc(100vw - 32px)); }
+.viewer .ed-head p { margin: 0; font-size: 13.5px; color: var(--muted); overflow-wrap: anywhere; }
+.viewer-body { display: grid; place-items: center; padding: 12px; background: var(--sunken); }
+.viewer-body img { display: block; max-width: 100%; max-height: 70vh; object-fit: contain; }
+.viewer-foot { display: flex; justify-content: center; gap: 8px; padding: 10px; }
+
+/* Toast */
+.toast {
+  position: fixed; left: 50%; bottom: calc(20px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); z-index: 20;
+  display: flex; align-items: center; gap: 14px; max-width: calc(100vw - 32px); padding: 10px 12px 10px 16px;
+  font-size: 13.5px; color: var(--bg); background: var(--ink); border-radius: 10px; box-shadow: var(--shadow);
+}
+.toast button { padding: 4px 6px; border: 0; background: transparent; color: var(--bg); font: 600 13px var(--f-body); text-decoration: underline; text-underline-offset: 2px; cursor: pointer; }
+
+@media (max-width: 960px) {
+  .layout { grid-template-columns: minmax(0, 1fr); }
+}
+@media (max-width: 640px) {
+  h1 { font-size: 28px; }
+  .top-actions { width: 100%; }
+  .top-actions input[type="search"] { flex: 1; width: auto; min-width: 0; }
+  .sync { width: 100%; }
+  .tiles { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .tile:last-child { grid-column: 1 / -1; }
+  .tile .n { font-size: 26px; }
+  .filters, .filters select { width: 100%; max-width: none; }
+  .task { grid-template-columns: auto minmax(0, 1fr); }
+  .side { grid-column: 2; display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-start; text-align: left; }
+  .pills { justify-content: flex-start; }
+  .fields { grid-template-columns: minmax(0, 1fr); }
+  .codes { grid-template-columns: minmax(0, 1fr); }
+}
+@media (prefers-reduced-motion: reduce) {
+  * { scroll-behavior: auto !important; transition: none !important; animation: none !important; }
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <div>
+      <p class="eyebrow">Governance · Risk · Compliance</p>
+      <h1>GRC Task Desk</h1>
+      <p class="dateline"><span id="d-date"></span><span class="mono" id="d-week"></span><span class="mono" id="d-quarter"></span></p>
+    </div>
+    <div class="top-actions">
+      <span class="sync" id="sync" data-state="connecting">Connecting…</span>
+      <label class="sr" for="q">Search tasks</label>
+      <input type="search" id="q" placeholder="Search tasks, notes, projects" autocomplete="off">
+      <button type="button" class="btn primary" id="new-task">New task</button>
+    </div>
+  </header>
+
+  <section class="tiles" aria-label="Today at a glance">
+    <button type="button" class="tile" id="tile-overdue" data-go="focus"><span class="n" id="n-overdue">0</span><span class="l">Overdue</span></button>
+    <button type="button" class="tile" id="tile-today" data-go="focus"><span class="n" id="n-today">0</span><span class="l">Due today</span></button>
+    <button type="button" class="tile" id="tile-soon" data-go="week"><span class="n" id="n-soon">0</span><span class="l">Next 7 days</span></button>
+    <button type="button" class="tile" id="tile-waiting" data-go="waiting"><span class="n" id="n-waiting">0</span><span class="l">Waiting on others</span></button>
+    <button type="button" class="tile" id="tile-done" data-go="done"><span class="n" id="n-done">0</span><span class="l">Done this week</span></button>
+  </section>
+
+  <div class="layout">
+    <main>
+      <div class="toolbar">
+        <div class="views" id="views" role="group" aria-label="View">
+          <button type="button" data-view="focus" aria-pressed="true">Focus</button>
+          <button type="button" data-view="week" aria-pressed="false">Next 7 days</button>
+          <button type="button" data-view="open" aria-pressed="false">All open</button>
+          <button type="button" data-view="waiting" aria-pressed="false">Waiting</button>
+          <button type="button" data-view="recurring" aria-pressed="false">Recurring</button>
+          <button type="button" data-view="done" aria-pressed="false">Done</button>
+        </div>
+        <div class="filters">
+          <label class="sr" for="filter-project">Filter by project</label>
+          <select id="filter-project"></select>
+        </div>
+      </div>
+
+      <form class="quick" id="quick" autocomplete="off">
+        <label class="sr" for="quick-title">New task title</label>
+        <input type="text" id="quick-title" placeholder="Type a task, press Enter, then set its due date and notes" maxlength="200">
+        <button type="submit" class="btn">Add task</button>
+      </form>
+
+      <div class="notices" id="notices"></div>
+      <div class="list" id="list"></div>
+    </main>
+
+    <aside>
+      <section class="panel" id="config">
+        <h2>Configuration</h2>
+        <h3>Projects</h3>
+        <p class="sub">The projects you're working on. Assign each task to one and filter your desk by project.</p>
+        <ul class="projects" id="project-list"></ul>
+        <form class="add-project" id="add-project" autocomplete="off">
+          <label class="sr" for="project-name">New project name</label>
+          <input type="text" id="project-name" placeholder="e.g. ISO 27001 certification" maxlength="80">
+          <button type="submit" class="btn">Add</button>
+        </form>
+        <div id="backup" hidden>
+          <h3>Backup</h3>
+          <p class="sub">Download your tasks, projects and pictures as one zip file. To restore it, stop the app and unzip it into the app's data folder.</p>
+          <a class="btn small" id="backup-link" href="#" download>Download backup</a>
+        </div>
+      </section>
+      <section class="panel" id="library">
+        <h2>Routine library</h2>
+        <p class="sub">Standard GRC check-ins, each mapped to a control reference. Pick one, set its due date and project, and it repeats on its cadence.</p>
+        <div class="cadence" id="cadence" role="group" aria-label="Cadence">
+          <button type="button" data-lib="daily" aria-pressed="true">Daily</button>
+          <button type="button" data-lib="weekly" aria-pressed="false">Weekly</button>
+          <button type="button" data-lib="monthly" aria-pressed="false">Monthly</button>
+          <button type="button" data-lib="quarterly" aria-pressed="false">Quarterly</button>
+          <button type="button" data-lib="annual" aria-pressed="false">Annual</button>
+        </div>
+        <ul class="lib" id="lib-list"></ul>
+      </section>
+      <section class="panel">
+        <h2>Area codes</h2>
+        <dl class="codes" id="codes"></dl>
+      </section>
+    </aside>
+  </div>
+
+  <p class="foot">Control references follow ISO/IEC 27001:2022, the 2017 SOC 2 Trust Services Criteria, NIST CSF 2.0, PCI DSS v4.0 and GDPR. Check them against the versions your programme is certified to.</p>
+</div>
+
+<dialog id="editor" aria-labelledby="ed-title">
+  <form id="ed-form" novalidate>
+    <div class="ed-head">
+      <h2 id="ed-title">New task</h2>
+      <button type="button" class="icon-btn" data-close aria-label="Close">×</button>
+    </div>
+    <fieldset id="ed-fields">
+      <div class="fields">
+        <div class="field span2">
+          <label for="f-title"><span class="field-label">Task <em>*</em></span></label>
+          <input type="text" id="f-title" maxlength="200" required>
+          <p class="field-error" id="err-title" hidden>Give the task a title.</p>
+        </div>
+        <div class="field">
+          <label for="f-project"><span class="field-label">Project</span></label>
+          <select id="f-project"></select>
+          <p class="hint" id="proj-hint" hidden>Add projects under Configuration.</p>
+        </div>
+        <div class="field">
+          <label for="f-due"><span class="field-label">Due date <em>*</em></span></label>
+          <input type="date" id="f-due" required>
+          <p class="field-error" id="err-due" hidden>Pick a due date.</p>
+        </div>
+        <label class="field span2"><span>Notes</span><textarea id="f-notes" rows="5" maxlength="8000" placeholder="Context, decisions, who you spoke to, what's next"></textarea></label>
+        <div class="field span2" id="pics-field">
+          <span>Pictures</span>
+          <div class="pic-zone" id="pic-zone">
+            <p>Paste a screenshot with <kbd>Ctrl</kbd>+<kbd>V</kbd> (<kbd>⌘</kbd>+<kbd>V</kbd> on a Mac), or drop pictures here.</p>
+            <button type="button" class="btn small" id="pic-choose">Choose pictures</button>
+            <input type="file" id="pic-input" class="sr" accept="image/png,image/jpeg,image/gif,image/webp" multiple tabindex="-1" aria-hidden="true">
+          </div>
+          <p class="hint" id="pic-off" hidden>Pictures can't be added in this view.</p>
+          <div class="ed-pics" id="ed-pics"></div>
+        </div>
+
+        <p class="fields-head span2">Details</p>
+        <label class="field"><span>Priority</span><select id="f-pri"></select></label>
+        <label class="field"><span>Repeats</span><select id="f-recur"></select></label>
+        <label class="field"><span>Status</span><select id="f-status"></select></label>
+        <label class="field"><span>Area</span><select id="f-cat"></select></label>
+        <label class="field"><span>Framework</span><input type="text" id="f-fw" list="fw-list" placeholder="ISO 27001" maxlength="60"></label>
+        <label class="field"><span>Control reference</span><input type="text" id="f-ctrl" placeholder="A.5.18" maxlength="60"></label>
+        <label class="field"><span>Owner or stakeholder</span><input type="text" id="f-owner" placeholder="IT Operations" maxlength="80"></label>
+        <label class="field"><span>Evidence location</span><input type="text" id="f-evidence" placeholder="Link to the evidence folder or ticket" maxlength="500"></label>
+      </div>
+    </fieldset>
+    <p class="ed-history" id="ed-history" hidden></p>
+    <div class="ed-foot">
+      <div class="del-zone">
+        <button type="button" class="btn danger-ghost" id="ed-delete">Delete task</button>
+        <span id="ed-confirm" hidden>Delete this task and its pictures?
+          <button type="button" class="btn danger small" id="ed-del-yes">Delete</button>
+          <button type="button" class="btn ghost small" id="ed-del-no">Keep it</button>
+        </span>
+      </div>
+      <div class="acts">
+        <button type="button" class="btn ghost" data-close>Cancel</button>
+        <button type="submit" class="btn primary" id="ed-save">Save task</button>
+      </div>
+    </div>
+  </form>
+</dialog>
+<datalist id="fw-list"></datalist>
+
+<dialog id="viewer" class="viewer" aria-labelledby="viewer-cap">
+  <div class="ed-head">
+    <p id="viewer-cap"></p>
+    <button type="button" class="icon-btn" data-vclose aria-label="Close">×</button>
+  </div>
+  <div class="viewer-body"><img id="viewer-img" alt=""></div>
+  <div class="viewer-foot" id="viewer-nav">
+    <button type="button" class="btn small" id="viewer-prev">Previous</button>
+    <button type="button" class="btn small" id="viewer-next">Next</button>
+  </div>
+</dialog>
+
+<div class="toast" id="toast" role="status" aria-live="polite" hidden><span id="toast-msg"></span><button type="button" id="toast-undo">Undo</button></div>
+
+<script>
+(() => {
+  "use strict";
+  const $ = (s, r = document) => r.querySelector(s);
+  const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+
+  const CATS = {
+    risk: { code: "RSK", name: "Risk management" },
+    compliance: { code: "CMP", name: "Compliance & controls" },
+    audit: { code: "AUD", name: "Audit & assurance" },
+    policy: { code: "POL", name: "Policy & exceptions" },
+    vendor: { code: "TPR", name: "Third-party risk" },
+    access: { code: "IAM", name: "Access reviews" },
+    incident: { code: "INC", name: "Incidents & breaches" },
+    awareness: { code: "TRN", name: "Training & awareness" },
+    bcm: { code: "BCM", name: "Continuity & resilience" },
+    governance: { code: "GOV", name: "Reporting & governance" },
+  };
+  const RECUR = { none: "One-off", daily: "Daily", weekly: "Weekly", monthly: "Monthly", quarterly: "Quarterly", annual: "Annual" };
+  const PRI = { high: "High", medium: "Medium", low: "Low" };
+  const PRI_RANK = { high: 0, medium: 1, low: 2 };
+  const STATUS = { todo: "To do", doing: "In progress", waiting: "Waiting on others", done: "Done" };
+  const FRAMEWORKS = ["ISO 27001", "SOC 2", "NIST CSF 2.0", "PCI DSS v4.0", "GDPR", "HIPAA", "ISO 22301", "NIS2", "DORA", "Internal"];
+  const ACCEPT = ["image/png", "image/jpeg", "image/gif", "image/webp"];
+  const MAX_PIC = 20 * 1024 * 1024;
+  const NO_PROJECT = "__none";
+  /* Three hosts: the local app server (its copy carries the API meta tag), claude.ai (the viewer
+     provides window.claude), or a copy opened straight from disk. */
+  const API = (document.querySelector('meta[name="grc-task-desk-api"]') || {}).content || "";
+  const env = API ? "server" : window.claude && typeof window.claude.use === "function" ? "claude" : "browser";
+
+  const LIBRARY = [
+    { recur: "daily", title: "Check the incident log for items with a regulatory clock", cat: "incident", fw: "GDPR", ctrl: "Art. 33", pri: "high", notes: "Personal data breaches go to the supervisory authority within 72 hours of becoming aware." },
+    { recur: "daily", title: "Triage new policy exception requests", cat: "policy", fw: "ISO 27001", ctrl: "A.5.36", pri: "medium", notes: "" },
+    { recur: "daily", title: "Work the audit evidence request queue", cat: "audit", fw: "SOC 2", ctrl: "", pri: "medium", notes: "Upload evidence to the auditor portal and update the request tracker." },
+    { recur: "daily", title: "Answer customer security questionnaires in the queue", cat: "compliance", fw: "", ctrl: "", pri: "medium", notes: "" },
+    { recur: "daily", title: "Review regulatory and standards update alerts", cat: "compliance", fw: "ISO 27001", ctrl: "A.5.31", pri: "low", notes: "" },
+
+    { recur: "weekly", title: "Review the risk register for new or changed risks", cat: "risk", fw: "ISO 27001", ctrl: "8.2", pri: "medium", notes: "" },
+    { recur: "weekly", title: "Chase overdue risk treatment actions with owners", cat: "risk", fw: "ISO 27001", ctrl: "8.3", pri: "high", notes: "" },
+    { recur: "weekly", title: "Update the control testing tracker", cat: "compliance", fw: "SOC 2", ctrl: "CC4.1", pri: "medium", notes: "" },
+    { recur: "weekly", title: "Follow up open audit findings and corrective actions", cat: "audit", fw: "ISO 27001", ctrl: "10.2", pri: "high", notes: "" },
+    { recur: "weekly", title: "Send the weekly GRC status note to the CISO", cat: "governance", fw: "", ctrl: "", pri: "low", notes: "" },
+
+    { recur: "monthly", title: "Review privileged access rights", cat: "access", fw: "ISO 27001", ctrl: "A.8.2", pri: "high", notes: "" },
+    { recur: "monthly", title: "Compile KRI and compliance metrics", cat: "governance", fw: "ISO 27001", ctrl: "9.1", pri: "medium", notes: "" },
+    { recur: "monthly", title: "Chase overdue security awareness training", cat: "awareness", fw: "ISO 27001", ctrl: "A.6.3", pri: "medium", notes: "" },
+    { recur: "monthly", title: "Reassess suppliers due for review", cat: "vendor", fw: "ISO 27001", ctrl: "A.5.22", pri: "medium", notes: "" },
+    { recur: "monthly", title: "Check vulnerability remediation against SLAs", cat: "compliance", fw: "ISO 27001", ctrl: "A.8.8", pri: "medium", notes: "" },
+
+    { recur: "quarterly", title: "Run the user access recertification", cat: "access", fw: "ISO 27001", ctrl: "A.5.18", pri: "high", notes: "" },
+    { recur: "quarterly", title: "Prepare the risk committee pack", cat: "risk", fw: "NIST CSF 2.0", ctrl: "GV.OV", pri: "medium", notes: "" },
+    { recur: "quarterly", title: "Collect internal vulnerability scan evidence", cat: "compliance", fw: "PCI DSS v4.0", ctrl: "11.3.1", pri: "medium", notes: "" },
+    { recur: "quarterly", title: "Check the policy review schedule", cat: "policy", fw: "NIST CSF 2.0", ctrl: "GV.PO-02", pri: "low", notes: "" },
+
+    { recur: "annual", title: "Plan and run the internal ISMS audit", cat: "audit", fw: "ISO 27001", ctrl: "9.2", pri: "high", notes: "" },
+    { recur: "annual", title: "Hold the ISMS management review", cat: "governance", fw: "ISO 27001", ctrl: "9.3", pri: "high", notes: "" },
+    { recur: "annual", title: "Review and re-approve information security policies", cat: "policy", fw: "ISO 27001", ctrl: "A.5.1", pri: "medium", notes: "" },
+    { recur: "annual", title: "Refresh the information security risk assessment", cat: "risk", fw: "ISO 27001", ctrl: "6.1.2", pri: "high", notes: "" },
+    { recur: "annual", title: "Update the Statement of Applicability", cat: "compliance", fw: "ISO 27001", ctrl: "6.1.3", pri: "medium", notes: "" },
+    { recur: "annual", title: "Test business continuity and ICT recovery", cat: "bcm", fw: "ISO 27001", ctrl: "A.5.30", pri: "medium", notes: "" },
+    { recur: "annual", title: "Run an incident response tabletop exercise", cat: "incident", fw: "ISO 27001", ctrl: "A.5.24", pri: "medium", notes: "" },
+  ];
+
+  /* Dates are local calendar days as YYYY-MM-DD strings, so they compare as text. */
+  const pad = n => String(n).padStart(2, "0");
+  const iso = d => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+  const parse = s => { const [y, m, d] = s.split("-").map(Number); return new Date(y, m - 1, d); };
+  const today = () => iso(new Date());
+  const addDays = (s, n) => { const d = parse(s); d.setDate(d.getDate() + n); return iso(d); };
+  const addMonths = (s, n) => {
+    const d = parse(s), day = d.getDate();
+    d.setDate(1); d.setMonth(d.getMonth() + n);
+    d.setDate(Math.min(day, new Date(d.getFullYear(), d.getMonth() + 1, 0).getDate()));
+    return iso(d);
+  };
+  const diffDays = (a, b) => Math.round((parse(a) - parse(b)) / 864e5);
+  const weekStart = s => addDays(s, -((parse(s).getDay() + 6) % 7));
+  const fmtShort = s => {
+    if (!s) return "";
+    const d = parse(s);
+    const opts = d.getFullYear() === new Date().getFullYear() ? { day: "numeric", month: "short" } : { day: "numeric", month: "short", year: "numeric" };
+    return d.toLocaleDateString(undefined, opts);
+  };
+  const fmtLong = s => s ? parse(s).toLocaleDateString(undefined, { weekday: "short", day: "numeric", month: "short" }) : "";
+  function isoWeek(s) {
+    const d = parse(s);
+    d.setDate(d.getDate() - ((d.getDay() + 6) % 7) + 3);
+    const jan4 = new Date(d.getFullYear(), 0, 4);
+    return 1 + Math.round(((d - jan4) / 864e5 - 3 + ((jan4.getDay() + 6) % 7)) / 7);
+  }
+  const quarterEnd = s => { const d = parse(s); return iso(new Date(d.getFullYear(), Math.floor(d.getMonth() / 3) * 3 + 3, 0)); };
+  function step(s, recur) {
+    switch (recur) {
+      case "daily": return addDays(s, 1);
+      case "weekly": return addDays(s, 7);
+      case "monthly": return addMonths(s, 1);
+      case "quarterly": return addMonths(s, 3);
+      case "annual": return addMonths(s, 12);
+    }
+    return s;
+  }
+  function nextDue(t, now) {
+    if (!RECUR[t.recur] || t.recur === "none") return t.due;
+    let n = step(t.due || now, t.recur);
+    while (n <= now) n = step(n, t.recur);
+    return n;
+  }
+
+  /* Per-viewer conveniences only: remembered view and filter. */
+  const prefs = {
+    get(k, d) { try { const v = localStorage.getItem("grc-desk:" + k); return v == null ? d : JSON.parse(v); } catch (e) { return d; } },
+    set(k, v) { try { localStorage.setItem("grc-desk:" + k, JSON.stringify(v)); } catch (e) { /* storage unavailable */ } },
+  };
+  const VIEWS = ["focus", "week", "open", "waiting", "recurring", "done"];
+  const ui = {
+    view: VIEWS.includes(prefs.get("view", "focus")) ? prefs.get("view", "focus") : "focus",
+    project: String(prefs.get("project", "") || ""),
+    lib: RECUR[prefs.get("lib", "daily")] ? prefs.get("lib", "daily") : "daily",
+    q: "",
+    confirmClear: false,
+    renaming: "",
+    removing: "",
+  };
+
+  /* Store: the local app server keeps tasks and projects in its database. On claude.ai the db
+     capability keeps them. A copy opened from disk keeps them in this browser's localStorage.
+     Inside a claude.ai view without db, the page runs in this tab only. */
+  let db = null, ro = false, mode = "connecting", pending = 0, lastDay = today(), localBlocked = false, rev = null;
+  const tasks = new Map(), projects = new Map();
+  const queues = {};
+
+  function normTask(id, b) {
+    return {
+      id,
+      title: String(b.title || "Untitled task"),
+      notes: String(b.notes || ""),
+      project: String(b.project || ""),
+      cat: CATS[b.cat] ? b.cat : "compliance",
+      fw: String(b.fw || ""),
+      ctrl: String(b.ctrl || ""),
+      pri: PRI[b.pri] ? b.pri : "medium",
+      status: STATUS[b.status] ? b.status : "todo",
+      due: /^\d{4}-\d{2}-\d{2}$/.test(b.due || "") ? b.due : "",
+      recur: RECUR[b.recur] ? b.recur : "none",
+      owner: String(b.owner || ""),
+      evidence: String(b.evidence || ""),
+      images: Array.isArray(b.images) ? b.images.filter(p => typeof p === "string" && p) : [],
+      history: Array.isArray(b.history) ? b.history.filter(h => typeof h === "string") : [],
+      completedAt: String(b.completedAt || ""),
+      created: Number(b.created) || 0,
+      starter: !!b.starter,
+    };
+  }
+  const normProject = (id, b) => ({ id, name: String(b.name || "Untitled project").slice(0, 80), created: Number(b.created) || 0 });
+  const MAPS = { tasks, projects };
+  const NORM = { tasks: normTask, projects: normProject };
+  const clean = t => { const { id, ...body } = t; return body; };
+  const blank = () => normTask("", {
+    title: "", cat: "compliance", pri: "medium", status: "todo", due: "", recur: "none",
+    project: projects.has(ui.project) ? ui.project : "", created: Date.now(),
+  });
+  const newId = coll => db ? db.collection(coll).doc().id : Date.now().toString(36) + Math.random().toString(36).slice(2, 10);
+  const projectList = () => [...projects.values()].sort((a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: "base" }));
+  const projectName = id => (projects.get(id) || {}).name || "";
+
+  function track(key, op) {
+    pending++; renderSync();
+    queues[key] = (queues[key] || Promise.resolve())
+      .then(op)
+      .catch(onWriteError)
+      .finally(() => { pending--; renderSync(); });
+  }
+  function put(coll, id, body) {
+    if (ro) return;
+    MAPS[coll].set(id, NORM[coll](id, body));
+    render();
+    if (env === "server") { track(coll + "/" + id, () => api("PUT", `/${coll}/${encodeURIComponent(id)}`, body).then(noteRevision)); return; }
+    if (!db) { persistLocal(coll); return; }
+    const ref = db.collection(coll).doc(id);
+    track(coll + "/" + id, () => ref.set(body));
+  }
+  function drop(coll, id) {
+    if (ro) return;
+    MAPS[coll].delete(id);
+    render();
+    if (env === "server") { track(coll + "/" + id, () => api("DELETE", `/${coll}/${encodeURIComponent(id)}`).then(noteRevision)); return; }
+    if (!db) { persistLocal(coll); return; }
+    const ref = db.collection(coll).doc(id);
+    track(coll + "/" + id, () => ref.delete());
+  }
+
+  /* Local app server: a small JSON API next to the page. */
+  async function api(method, path, body) {
+    const init = { method, headers: {} };
+    if (body instanceof Blob) { init.body = body; init.headers["Content-Type"] = body.type || "application/octet-stream"; }
+    else if (body !== undefined) { init.body = JSON.stringify(body); init.headers["Content-Type"] = "application/json"; }
+    let r;
+    try { r = await fetch(API + path, init); } catch (e) { throw { code: "offline" }; }
+    const data = r.status === 204 ? null : await r.json().catch(() => null);
+    if (!r.ok) throw { code: "http", status: r.status, message: (data && data.error) || "" };
+    return data;
+  }
+  function noteRevision(r) {
+    if (r && r.revision != null) rev = r.revision;
+    if (mode === "offline") { mode = "server"; render(); }
+  }
+  async function loadServer() {
+    const s = await api("GET", "/state");
+    for (const coll of ["tasks", "projects"]) {
+      MAPS[coll].clear();
+      for (const b of s[coll] || []) if (b && typeof b.id === "string") MAPS[coll].set(b.id, NORM[coll](b.id, b));
+    }
+    rev = s.revision;
+  }
+  /* Pick up changes made in another tab or browser, and notice when the server stops. */
+  async function poll() {
+    if (document.hidden || pending > 0) return;
+    try {
+      const r = await api("GET", "/revision");
+      const changed = r.revision !== rev, wasOffline = mode === "offline";
+      if (changed) await loadServer();
+      mode = "server";
+      if (changed || wasOffline) render();
+    } catch (e) {
+      if (mode !== "offline") { mode = "offline"; render(); }
+    }
+  }
+  const save = (id, body) => put("tasks", id, body);
+  function removeTask(id) {
+    if (ro) return;
+    const t = tasks.get(id);
+    drop("tasks", id);
+    if (t) t.images.forEach(p => pics.del(p));
+  }
+  function loadLocal() {
+    try { localStorage.setItem("grc-desk:probe", "1"); localStorage.removeItem("grc-desk:probe"); } catch (e) { localBlocked = true; }
+    for (const coll of ["tasks", "projects"]) {
+      MAPS[coll].clear();
+      const saved = prefs.get(coll, {});
+      if (saved && typeof saved === "object") {
+        for (const [id, b] of Object.entries(saved)) if (b && typeof b === "object") MAPS[coll].set(id, NORM[coll](id, b));
+      }
+    }
+  }
+  function persistLocal(coll) {
+    if (mode !== "browser") return;
+    const all = {};
+    for (const x of MAPS[coll].values()) all[x.id] = clean(x);
+    try { localStorage.setItem("grc-desk:" + coll, JSON.stringify(all)); localBlocked = false; }
+    catch (e) { localBlocked = true; }
+    renderNotices();
+    renderSync();
+  }
+  function onWriteError(e) {
+    const code = e && e.code;
+    if (code === "offline") {
+      mode = "offline"; render();
+      toast("The GRC Task Desk server isn't running, so that change wasn't saved.");
+    } else if (code === "http") {
+      toast(e.status === 413 ? "That's too large to save." : "That change didn't save. Reload the page and try again.");
+    } else if (code === "invalid_argument" || code === "not_granted") {
+      ro = true; render();
+      toast("This list is view-only for you, so that change wasn't saved.");
+    } else if (code === "quota_exceeded") {
+      toast("The task store is full. Delete finished tasks to make room.");
+    } else if (code === "revoked") {
+      mode = "error"; render();
+    } else {
+      toast("That change didn't save. Check your connection and try again.");
+    }
+  }
+
+  /* Pictures: artifact assets on claude.ai, IndexedDB in a copy opened from disk. Tasks keep ids only. */
+  const pics = {
+    canAdd: false, assets: null, idb: null, urls: new Map(),
+    src(id) {
+      if (env === "claude") return "/_blob/" + encodeURIComponent(id);
+      if (env === "server") return API + "/pictures/" + encodeURIComponent(id);
+      return this.urls.get(id) || "";
+    },
+    async put(file) {
+      if (env === "server") return (await api("POST", "/pictures", file)).id;
+      if (this.assets) return (await this.assets.upload(file)).id;
+      if (!this.idb) throw { code: "unavailable" };
+      const id = "pic-" + Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
+      await idbDo("readwrite", s => s.put(file, id));
+      this.urls.set(id, URL.createObjectURL(file));
+      return id;
+    },
+    async del(id) {
+      try {
+        if (env === "server") await api("DELETE", "/pictures/" + encodeURIComponent(id));
+        else if (this.assets) await this.assets.delete(id);
+        else if (this.idb) {
+          await idbDo("readwrite", s => s.delete(id));
+          const u = this.urls.get(id);
+          if (u) URL.revokeObjectURL(u);
+          this.urls.delete(id);
+        }
+      } catch (e) { /* no task points at it any more */ }
+    },
+    async load(id) {
+      if (this.urls.has(id)) return this.urls.get(id);
+      if (!this.idb) return "";
+      const blob = await idbDo("readonly", s => s.get(id)).catch(() => null);
+      if (!(blob instanceof Blob)) return "";
+      const u = URL.createObjectURL(blob);
+      this.urls.set(id, u);
+      return u;
+    },
+  };
+  function idbOpen() {
+    return new Promise((resolve, reject) => {
+      const rq = indexedDB.open("grc-task-desk", 1);
+      rq.onupgradeneeded = () => rq.result.createObjectStore("pictures");
+      rq.onsuccess = () => resolve(rq.result);
+      rq.onerror = () => reject(rq.error);
+    });
+  }
+  function idbDo(txMode, fn) {
+    return new Promise((resolve, reject) => {
+      const tx = pics.idb.transaction("pictures", txMode);
+      const rq = fn(tx.objectStore("pictures"));
+      tx.oncomplete = () => resolve(rq.result);
+      tx.onerror = () => reject(tx.error);
+      tx.onabort = () => reject(tx.error);
+    });
+  }
+  const imgTag = (id, alt = "") => { const src = pics.src(id); return `<img data-pic="${esc(id)}"${src ? ` src="${esc(src)}"` : ""} alt="${esc(alt)}" loading="lazy">`; };
+  function hydratePics(root) {
+    if (env !== "browser") return;
+    for (const img of root.querySelectorAll("img[data-pic]:not([src])")) {
+      pics.load(img.dataset.pic).then(u => { if (u) img.src = u; else img.classList.add("missing"); });
+    }
+  }
+  document.addEventListener("error", e => {
+    const t = e.target;
+    if (t && t.tagName === "IMG" && t.dataset && t.dataset.pic) t.classList.add("missing");
+  }, true);
+  function picError(e) {
+    const c = e && e.code;
+    if (c === "offline") return "The GRC Task Desk server isn't running, so the picture wasn't saved.";
+    if (c === "http" && e.status === 415) return "Use a PNG, JPEG, GIF or WebP picture.";
+    if (c === "http" && e.status === 413) return "That picture is over 20 MB. Crop or compress it and try again.";
+    if (c === "too_large") return "That picture is over 20 MB. Crop or compress it and try again.";
+    if (c === "unsupported_type") return "Use a PNG, JPEG, GIF or WebP picture.";
+    if (c === "quota_or_state") return "Picture storage is full. Remove pictures you no longer need.";
+    if (c === "rate_limited") return "Too many pictures at once. Wait a moment and try again.";
+    if (e && e.name === "QuotaExceededError") return "This browser is out of space for pictures.";
+    return "That picture didn't save. Try again.";
+  }
+
+  async function boot() {
+    if (env === "server") {
+      try { await loadServer(); mode = "server"; } catch (e) { mode = "offline"; }
+      pics.canAdd = true;
+      render();
+      setInterval(poll, 10000);
+      document.addEventListener("visibilitychange", () => { if (!document.hidden) poll(); });
+      return;
+    }
+    if (env === "browser") {
+      mode = "browser";
+      loadLocal();
+      render();
+      try { if (window.indexedDB) { pics.idb = await idbOpen(); pics.canAdd = true; } } catch (e) { pics.canAdd = false; }
+      render();
+      return;
+    }
+    const c = window.claude;
+    let d = null, u = null, a = null;
+    try { [d, u, a] = await Promise.all([c.use("db"), c.use("user"), c.use("assets")]); } catch (e) { /* treated as absent */ }
+    if (u) { try { if (await u.can("data.write") === false) ro = true; } catch (e) { /* keep controls */ } }
+    if (!d) { mode = "local"; render(); return; }
+    db = d;
+    pics.assets = a;
+    pics.canAdd = !!a && !ro;
+    const got = { tasks: false, projects: false };
+    for (const coll of ["tasks", "projects"]) {
+      db.collection(coll).onSnapshot(snap => {
+        MAPS[coll].clear();
+        for (const doc of snap.docs) { const b = doc.data(); if (b) MAPS[coll].set(doc.id, NORM[coll](doc.id, b)); }
+        got[coll] = true;
+        if (got.tasks && got.projects) mode = "synced";
+        render();
+      }, () => { mode = "error"; render(); });
+    }
+  }
+
+  /* Derived views */
+  function inProject(t) {
+    if (ui.project === NO_PROJECT) return !projects.has(t.project);
+    return !ui.project || t.project === ui.project;
+  }
+  function matches(t) {
+    if (!inProject(t)) return false;
+    if (ui.q) {
+      const hay = [t.title, t.notes, projectName(t.project), t.fw, t.ctrl, t.owner, t.evidence, CATS[t.cat].code, CATS[t.cat].name].join(" ").toLowerCase();
+      if (!hay.includes(ui.q)) return false;
+    }
+    return true;
+  }
+  const byDue = (a, b) => (a.due || "9999").localeCompare(b.due || "9999") || PRI_RANK[a.pri] - PRI_RANK[b.pri] || a.title.localeCompare(b.title);
+  function dueBucket(t, now) {
+    if (!t.due) return "nodate";
+    const d = diffDays(t.due, now);
+    return d < 0 ? "overdue" : d === 0 ? "today" : d <= 7 ? "week" : "later";
+  }
+  function buildGroups(list, now) {
+    if (ui.view === "done") {
+      const ws = weekStart(now);
+      const done = list.filter(t => t.status === "done").sort((a, b) => b.completedAt.localeCompare(a.completedAt) || a.title.localeCompare(b.title));
+      const logged = list.filter(t => t.status !== "done" && t.history.some(h => h >= ws)).sort((a, b) => b.history[0].localeCompare(a.history[0]));
+      return [
+        { key: "logged", label: "Recurring check-ins logged this week", items: logged },
+        { key: "done", label: "Completed", items: done },
+      ];
+    }
+    if (ui.view === "recurring") {
+      return Object.keys(RECUR).filter(r => r !== "none").map(r => ({
+        key: r, label: RECUR[r], items: list.filter(t => t.recur === r && t.status !== "done").sort(byDue),
+      }));
+    }
+    let items = list.filter(t => t.status !== "done");
+    if (ui.view === "focus") items = items.filter(t => (t.due && t.due <= now) || t.status === "doing");
+    if (ui.view === "week") items = items.filter(t => t.due && diffDays(t.due, now) <= 7);
+    if (ui.view === "waiting") items = items.filter(t => t.status === "waiting");
+    const labels = { overdue: "Overdue", today: "Due today", week: "Next 7 days", later: "Later", nodate: "No due date" };
+    return Object.keys(labels).map(k => ({ key: k, label: labels[k], items: items.filter(t => dueBucket(t, now) === k).sort(byDue) }));
+  }
+  function stats(now) {
+    const ws = weekStart(now);
+    const s = { overdue: 0, today: 0, soon: 0, waiting: 0, done: 0 };
+    for (const t of tasks.values()) {
+      if (!inProject(t)) continue;
+      s.done += t.history.filter(h => h >= ws).length;
+      if (t.status === "done") { if (t.completedAt >= ws) s.done++; continue; }
+      if (t.status === "waiting") s.waiting++;
+      if (t.due) {
+        const d = diffDays(t.due, now);
+        if (d < 0) s.overdue++; else if (d === 0) s.today++; else if (d <= 7) s.soon++;
+      }
+    }
+    return s;
+  }
+  function dueInfo(t, now) {
+    if (!t.due) return { text: "No date", tone: "none" };
+    const d = diffDays(t.due, now);
+    if (d < 0) return { text: (d === -1 ? "1 day" : -d + " days") + " overdue", tone: "crit" };
+    if (d === 0) return { text: "Due today", tone: "warn" };
+    if (d === 1) return { text: "Tomorrow", tone: "soon" };
+    if (d < 7) return { text: parse(t.due).toLocaleDateString(undefined, { weekday: "long" }), tone: "soon" };
+    return { text: fmtShort(t.due), tone: "none" };
+  }
+  const safeUrl = s => /^https?:\/\/\S+$/i.test(s.trim()) ? s.trim() : "";
+
+  /* Rendering */
+  function rowHTML(t, now) {
+    const cat = CATS[t.cat];
+    const done = t.status === "done";
+    const recurring = t.recur !== "none";
+    const ref = [t.fw, t.ctrl].filter(Boolean).join(" · ");
+    const link = safeUrl(t.evidence);
+    const due = dueInfo(t, now);
+    const pname = projectName(t.project);
+    const label = recurring && !done ? `Log “${t.title}” as done for this cycle` : done ? `Reopen “${t.title}”` : `Mark “${t.title}” done`;
+    const meta = [
+      pname && `<span class="proj">${esc(pname)}</span>`,
+      `<span class="code" title="${esc(cat.name)}">${cat.code}</span>`,
+      ref && `<span class="ref">${esc(ref)}</span>`,
+      recurring && `<span>↻ ${RECUR[t.recur]}${t.history[0] ? ", last done " + esc(fmtShort(t.history[0])) : ""}</span>`,
+      t.owner && `<span>Owner: ${esc(t.owner)}</span>`,
+      link ? `<a href="${esc(link)}" target="_blank" rel="noopener noreferrer">Evidence ↗</a>` : t.evidence && `<span>Evidence: ${esc(t.evidence)}</span>`,
+    ].filter(Boolean).join("");
+    const n = t.images.length;
+    const thumbs = n ? `<div class="thumbs">${t.images.slice(0, 4).map((p, i) =>
+      `<button type="button" class="thumb" data-act="view" data-i="${i}" aria-label="View picture ${i + 1} of ${n}">${imgTag(p)}</button>`).join("")}${n > 4
+      ? `<button type="button" class="thumb more" data-act="view" data-i="4" aria-label="View all ${n} pictures">+${n - 4}</button>` : ""}</div>` : "";
+    const pills = [
+      t.pri === "high" && !done && `<span class="pill high">High</span>`,
+      t.status === "doing" && `<span class="pill doing">In progress</span>`,
+      t.status === "waiting" && `<span class="pill waiting">Waiting</span>`,
+    ].filter(Boolean).join("");
+    const sideDue = done
+      ? `<span class="due">Done ${esc(fmtShort(t.completedAt))}</span>`
+      : `<span class="due" data-tone="${due.tone}">${esc(due.text)}</span>`;
+    return `<li class="task${done ? " is-done" : ""}" data-id="${esc(t.id)}">
+      <input type="checkbox" class="check" id="c-${esc(t.id)}" ${done ? "checked" : ""} ${ro ? "disabled" : ""} aria-label="${esc(label)}">
+      <div class="body">
+        <button type="button" class="title" id="t-${esc(t.id)}" data-act="edit">${esc(t.title)}</button>
+        ${t.notes ? `<p class="notes" data-act="edit">${esc(t.notes)}</p>` : ""}
+        <div class="meta">${meta}</div>
+        ${thumbs}
+      </div>
+      <div class="side">${sideDue}${pills ? `<span class="pills">${pills}</span>` : ""}<button type="button" class="btn ghost small" data-act="edit" aria-label="${ro ? "Open" : "Edit"} “${esc(t.title)}”">${ro ? "Open" : "Edit"}</button></div>
+    </li>`;
+  }
+
+  function emptyHTML() {
+    const loading = mode === "connecting";
+    return `<div class="empty">
+      <h3>${loading ? "Opening your task desk…" : "Nothing on your desk yet"}</h3>
+      <p>Your GRC tasks appear here, sorted into overdue, due today and the next seven days. Add a task with its due date and notes, or pick a check-in from the routine library.</p>
+      ${!loading && !ro ? `<div class="acts"><button type="button" class="btn primary" data-act="new">Add your first task</button></div>` : ""}
+    </div>`;
+  }
+  function noneHTML() {
+    const filtered = ui.project || ui.q;
+    const msg = {
+      focus: ["Clear for today", "Nothing is overdue or due today. Look at the next 7 days, or pull a routine from the library."],
+      week: ["A quiet week ahead", "Nothing is due in the next seven days."],
+      open: ["No open tasks", "Everything on your desk is done."],
+      waiting: ["Nobody owes you anything", "Set a task's status to Waiting on others when it depends on someone else, and it shows up here."],
+      recurring: ["No recurring tasks", "Add a check-in from the routine library, or set Repeats when you create a task."],
+      done: ["Nothing completed yet", "Finished tasks and logged check-ins from this week appear here."],
+    }[ui.view];
+    return `<div class="empty">
+      <h3>${filtered ? "No tasks match here" : msg[0]}</h3>
+      <p>${filtered ? "Try another project or view, or clear the search." : msg[1]}</p>
+      ${filtered ? `<div class="acts"><button type="button" class="btn" data-act="clear-filters">Show all projects</button></div>` : ""}
+    </div>`;
+  }
+
+  function renderHeader(now) {
+    const d = parse(now);
+    $("#d-date").textContent = d.toLocaleDateString(undefined, { weekday: "long", day: "numeric", month: "long", year: "numeric" });
+    $("#d-week").textContent = "Week " + isoWeek(now);
+    const left = diffDays(quarterEnd(now), now), q = Math.floor(d.getMonth() / 3) + 1;
+    $("#d-quarter").textContent = left === 0 ? `Q${q} closes today` : `Q${q} closes in ${left} day${left === 1 ? "" : "s"}`;
+  }
+  function renderTiles(now) {
+    const s = stats(now);
+    const set = (k, tone) => { $("#n-" + k).textContent = s[k]; $("#tile-" + k).dataset.tone = s[k] ? tone : ""; };
+    set("overdue", "crit"); set("today", "warn"); set("soon", ""); set("waiting", ""); set("done", "ok");
+  }
+  function renderToolbar() {
+    for (const b of document.querySelectorAll("#views button")) b.setAttribute("aria-pressed", String(b.dataset.view === ui.view));
+    if (ui.project && ui.project !== NO_PROJECT && !projects.has(ui.project) && mode !== "connecting") {
+      ui.project = ""; prefs.set("project", "");
+    }
+    const sel = $("#filter-project");
+    sel.innerHTML = `<option value="">All projects</option>`
+      + projectList().map(p => `<option value="${esc(p.id)}">${esc(p.name)}</option>`).join("")
+      + `<option value="${NO_PROJECT}">No project</option>`;
+    sel.value = ui.project;
+    $("#quick").hidden = ro;
+    $("#new-task").hidden = ro;
+  }
+  function renderSync() {
+    const el = $("#sync");
+    let state = mode, text;
+    if (pending > 0 && (db || env === "server")) { state = "saving"; text = "Saving…"; }
+    else if (mode === "browser" && localBlocked) { state = "local"; text = "Not saved in this browser"; }
+    else text = {
+      connecting: "Connecting…", synced: ro ? "View only" : "All changes saved", browser: "Saved in this browser",
+      server: "Saved on this computer", offline: "Server not responding",
+      local: "Not saved in this view", error: "Sync stopped, reload to reconnect",
+    }[mode] || "";
+    el.dataset.state = state;
+    el.textContent = text;
+  }
+  function renderNotices() {
+    const out = [];
+    if (mode === "local") out.push(`<div class="notice warn"><p>Changes stay in this tab only. Open this page on claude.ai while signed in to save your tasks.</p></div>`);
+    if (mode === "offline") out.push(`<div class="notice warn"><p>The GRC Task Desk server isn't responding, so changes can't be saved. Start the app again, then reload this page.</p></div>`);
+    if (mode === "browser" && localBlocked) out.push(`<div class="notice warn"><p>This browser is blocking storage for this file, so changes are lost when you close the tab. Open the page through a local web server instead, as described in the README.</p></div>`);
+    if (ro && db) out.push(`<div class="notice"><p>You can read this task list but not change it.</p></div>`);
+    const starters = [...tasks.values()].filter(t => t.starter).length;
+    if (starters && !ro) {
+      out.push(`<div class="notice"><p>${starters} starter task${starters === 1 ? " is" : "s are"} loaded as examples of a GRC week. Edit one and it becomes yours, or clear the rest.</p>
+        <div class="acts">${ui.confirmClear
+          ? `<span>Delete all ${starters} starter tasks?</span><button type="button" class="btn danger small" data-act="clear-yes">Delete them</button><button type="button" class="btn ghost small" data-act="clear-no">Keep</button>`
+          : `<button type="button" class="btn small" data-act="clear-ask">Clear starter tasks</button>`}</div></div>`);
+    }
+    $("#notices").innerHTML = out.join("");
+  }
+  function renderList(now) {
+    const host = $("#list");
+    const focusId = document.activeElement && host.contains(document.activeElement) ? document.activeElement.id : "";
+    if (!tasks.size) { host.innerHTML = emptyHTML(); return; }
+    const groups = buildGroups([...tasks.values()].filter(matches), now).filter(g => g.items.length);
+    host.innerHTML = groups.length
+      ? groups.map(g => `<section class="group" data-key="${g.key}"><h2>${esc(g.label)} <span class="count">${g.items.length}</span></h2><ul class="tasklist">${g.items.map(t => rowHTML(t, now)).join("")}</ul></section>`).join("")
+      : noneHTML();
+    hydratePics(host);
+    if (focusId) { const el = document.getElementById(focusId); if (el) el.focus({ preventScroll: true }); }
+  }
+  function renderConfig() {
+    const host = $("#project-list");
+    const draftEl = $("#rename-input");
+    const draft = draftEl ? draftEl.value : null;
+    const hadFocus = draftEl && document.activeElement === draftEl;
+    const open = {}, all = {};
+    for (const t of tasks.values()) {
+      all[t.project] = (all[t.project] || 0) + 1;
+      if (t.status !== "done") open[t.project] = (open[t.project] || 0) + 1;
+    }
+    const list = projectList();
+    host.innerHTML = list.length ? list.map(p => {
+      const n = open[p.id] || 0, count = `${n} open task${n === 1 ? "" : "s"}`;
+      if (ui.renaming === p.id && !ro) {
+        return `<li class="proj-row editing"><label class="sr" for="rename-input">Rename ${esc(p.name)}</label><input type="text" id="rename-input" value="${esc(draft ?? p.name)}" maxlength="80">
+          <div class="acts"><button type="button" class="btn small primary" data-pact="rename-save" data-id="${esc(p.id)}">Save</button><button type="button" class="btn small ghost" data-pact="rename-cancel">Cancel</button></div></li>`;
+      }
+      if (ui.removing === p.id && !ro) {
+        return `<li class="proj-row"><p class="confirm">Remove “${esc(p.name)}”?${all[p.id] ? " Its tasks stay on your desk under No project." : ""}</p>
+          <div class="acts"><button type="button" class="btn small danger" data-pact="remove-yes" data-id="${esc(p.id)}">Remove</button><button type="button" class="btn small ghost" data-pact="remove-no">Keep</button></div></li>`;
+      }
+      return `<li class="proj-row"><div class="proj-info"><p class="proj-name">${esc(p.name)}</p><p class="proj-count">${count}</p></div>${ro ? ""
+        : `<div class="acts"><button type="button" class="btn small ghost" data-pact="rename" data-id="${esc(p.id)}">Rename</button><button type="button" class="btn small ghost" data-pact="remove" data-id="${esc(p.id)}">Remove</button></div>`}</li>`;
+    }).join("") : `<li class="proj-empty">No projects yet. Add the ones you're running, such as an ISO 27001 certification or a SOC 2 Type II audit.</li>`;
+    $("#add-project").hidden = ro;
+    if (hadFocus) { const el = $("#rename-input"); if (el) { el.focus(); el.setSelectionRange(el.value.length, el.value.length); } }
+  }
+  const openTitles = () => new Set([...tasks.values()].filter(t => t.status !== "done").map(t => t.title.trim().toLowerCase()));
+  function renderLibrary() {
+    for (const b of document.querySelectorAll("#cadence button")) b.setAttribute("aria-pressed", String(b.dataset.lib === ui.lib));
+    const have = openTitles();
+    $("#lib-list").innerHTML = LIBRARY.map((x, i) => ({ ...x, i })).filter(x => x.recur === ui.lib).map(x => {
+      const ref = [x.fw, x.ctrl].filter(Boolean).join(" · ");
+      const inList = have.has(x.title.toLowerCase());
+      const action = ro ? "" : inList ? `<span class="in-list">In your list</span>` : `<button type="button" class="btn small" data-add="${x.i}" aria-label="Add ${esc(x.title)}">Add</button>`;
+      return `<li><div><p class="lib-title">${esc(x.title)}</p><p class="lib-ref"><span class="code">${CATS[x.cat].code}</span>${ref ? esc(ref) : "No control reference"}</p></div>${action}</li>`;
+    }).join("");
+  }
+  function render() {
+    const now = today();
+    lastDay = now;
+    renderHeader(now);
+    renderToolbar();
+    renderTiles(now);
+    renderNotices();
+    renderList(now);
+    renderConfig();
+    renderLibrary();
+    renderSync();
+  }
+
+  /* Actions */
+  function toggleDone(id) {
+    const t = tasks.get(id);
+    if (!t || ro) return;
+    const prev = clean(t), now = today();
+    let next, msg;
+    if (t.recur !== "none" && t.status !== "done") {
+      const due = nextDue(t, now);
+      next = { ...prev, status: "todo", due, history: [now, ...t.history].slice(0, 12) };
+      msg = `Logged. Next due ${fmtLong(due)}.`;
+    } else if (t.status === "done") {
+      next = { ...prev, status: "todo", completedAt: "" };
+      msg = "Moved back to your open tasks.";
+    } else {
+      next = { ...prev, status: "done", completedAt: now };
+      msg = "Marked done.";
+    }
+    save(id, next);
+    toast(msg, () => save(id, prev));
+  }
+
+  /* Editor */
+  const editor = $("#editor");
+  const ed = { id: null, pics: [], added: new Set(), removed: new Set(), uploading: 0, saved: false, open: false, session: 0 };
+  function fillSelect(sel, map) { sel.innerHTML = Object.entries(map).map(([k, v]) => `<option value="${k}">${esc(typeof v === "string" ? v : v.code + " · " + v.name)}</option>`).join(""); }
+  fillSelect($("#f-cat"), CATS);
+  fillSelect($("#f-pri"), PRI);
+  fillSelect($("#f-recur"), RECUR);
+  fillSelect($("#f-status"), STATUS);
+  $("#fw-list").innerHTML = FRAMEWORKS.map(f => `<option value="${esc(f)}"></option>`).join("");
+  $("#codes").innerHTML = Object.values(CATS).map(c => `<div><dt><span class="code">${c.code}</span></dt><dd>${esc(c.name)}</dd></div>`).join("");
+  if (env === "server") { $("#backup").hidden = false; $("#backup-link").href = API + "/backup"; }
+
+  function showErrors(title, due) {
+    $("#err-title").hidden = title; $("#f-title").setAttribute("aria-invalid", String(!title));
+    $("#err-due").hidden = due; $("#f-due").setAttribute("aria-invalid", String(!due));
+  }
+  function openEditor(id, preset) {
+    const cur = id ? tasks.get(id) : null;
+    if (id && !cur) return;
+    if (!cur && ro) return;
+    const t = cur || normTask("", { ...clean(blank()), ...preset });
+    const title = cur ? t.title : String((preset && preset.title) || "");
+    Object.assign(ed, { id: cur ? id : null, pics: [...t.images], added: new Set(), removed: new Set(), uploading: 0, saved: false, open: true, session: ed.session + 1 });
+    $("#ed-title").textContent = cur ? (ro ? "Task details" : "Edit task") : "New task";
+    $("#f-title").value = title;
+    $("#f-project").innerHTML = `<option value="">No project</option>` + projectList().map(p => `<option value="${esc(p.id)}">${esc(p.name)}</option>`).join("");
+    $("#f-project").value = projects.has(t.project) ? t.project : "";
+    $("#proj-hint").hidden = projects.size > 0 || ro;
+    $("#f-due").value = t.due;
+    $("#f-notes").value = t.notes;
+    $("#f-pri").value = t.pri;
+    $("#f-recur").value = t.recur;
+    $("#f-status").value = t.status;
+    $("#f-cat").value = t.cat;
+    $("#f-fw").value = t.fw;
+    $("#f-ctrl").value = t.ctrl;
+    $("#f-owner").value = t.owner;
+    $("#f-evidence").value = t.evidence;
+    showErrors(true, true);
+    const hist = $("#ed-history");
+    hist.hidden = !(cur && cur.history.length);
+    if (cur && cur.history.length) hist.innerHTML = `Logged: <span class="ref">${cur.history.slice(0, 8).map(h => esc(fmtShort(h))).join(", ")}</span>`;
+    $("#ed-fields").disabled = ro;
+    $("#ed-save").hidden = ro;
+    $("#ed-delete").hidden = !cur || ro;
+    $("#ed-confirm").hidden = true;
+    renderEdPics();
+    try { editor.showModal(); } catch (e) { editor.setAttribute("open", ""); }
+    if (!ro) (title && !t.due ? $("#f-due") : $("#f-title")).focus();
+  }
+  function closeEditor() {
+    if (typeof editor.close === "function" && editor.open) editor.close();
+    else { editor.removeAttribute("open"); onEditorClosed(); }
+  }
+  function onEditorClosed() {
+    if (!ed.open) return;
+    ed.open = false;
+    if (!ed.saved) ed.added.forEach(p => pics.del(p));
+    ed.added = new Set();
+  }
+  editor.addEventListener("close", onEditorClosed);
+  function renderEdPics() {
+    const box = $("#ed-pics");
+    box.innerHTML = ed.pics.map((p, i) => `<div class="ed-thumb"><button type="button" class="thumb-open" data-ed-view="${i}" aria-label="View picture ${i + 1}">${imgTag(p)}</button>${ro ? ""
+      : `<button type="button" class="thumb-x" data-ed-remove="${i}" aria-label="Remove picture ${i + 1}">×</button>`}</div>`).join("")
+      + (ed.uploading ? `<div class="ed-thumb uploading"><span>Adding…</span></div>` : "");
+    hydratePics(box);
+    $("#pic-zone").hidden = ro || !pics.canAdd;
+    $("#pic-off").hidden = ro || pics.canAdd;
+    $("#pics-field").hidden = ro && !ed.pics.length;
+    $("#ed-save").disabled = ed.uploading > 0;
+    $("#ed-save").textContent = ed.uploading ? "Adding pictures…" : "Save task";
+  }
+  async function addPictures(files) {
+    if (!pics.canAdd || ro || !ed.open) return;
+    const session = ed.session;
+    for (const f of files) {
+      if (!ACCEPT.includes(f.type)) { toast("Use a PNG, JPEG, GIF or WebP picture."); continue; }
+      if (f.size > MAX_PIC) { toast("That picture is over 20 MB. Crop or compress it and try again."); continue; }
+      ed.uploading++; renderEdPics();
+      try {
+        const id = await pics.put(f);
+        if (ed.session !== session || !ed.open) { pics.del(id); continue; }
+        ed.pics.push(id); ed.added.add(id);
+      } catch (e) {
+        toast(picError(e));
+      } finally {
+        if (ed.session === session) { ed.uploading--; renderEdPics(); }
+      }
+    }
+  }
+  function removeEdPic(i) {
+    const id = ed.pics[i];
+    if (!id || ro) return;
+    ed.pics.splice(i, 1);
+    if (ed.added.has(id)) { ed.added.delete(id); pics.del(id); } else ed.removed.add(id);
+    renderEdPics();
+  }
+  $("#ed-form").addEventListener("submit", e => {
+    e.preventDefault();
+    if (ro || ed.uploading) return;
+    const title = $("#f-title").value.trim(), due = $("#f-due").value;
+    showErrors(!!title, !!due);
+    if (!title) { $("#f-title").focus(); return; }
+    if (!due) { $("#f-due").focus(); return; }
+    const cur = ed.id && tasks.get(ed.id);
+    const base = cur ? clean(cur) : clean(blank());
+    const status = $("#f-status").value;
+    const body = {
+      ...base,
+      title,
+      due,
+      project: $("#f-project").value,
+      notes: $("#f-notes").value.trim(),
+      images: [...ed.pics],
+      pri: $("#f-pri").value,
+      recur: $("#f-recur").value,
+      status,
+      cat: $("#f-cat").value,
+      fw: $("#f-fw").value.trim(),
+      ctrl: $("#f-ctrl").value.trim(),
+      owner: $("#f-owner").value.trim(),
+      evidence: $("#f-evidence").value.trim(),
+      completedAt: status === "done" ? (base.status === "done" && base.completedAt ? base.completedAt : today()) : "",
+      starter: false,
+    };
+    save(cur ? ed.id : newId("tasks"), body);
+    ed.removed.forEach(p => pics.del(p));
+    ed.saved = true;
+    closeEditor();
+    toast(cur ? "Task saved." : "Task added.");
+  });
+  $("#f-title").addEventListener("input", () => { if ($("#f-title").value.trim()) showErrors(true, $("#err-due").hidden); });
+  $("#f-due").addEventListener("input", () => { if ($("#f-due").value) showErrors($("#err-title").hidden, true); });
+  editor.addEventListener("click", e => {
+    if (e.target === editor || e.target.closest("[data-close]")) { closeEditor(); return; }
+    const v = e.target.closest("[data-ed-view]");
+    if (v) { openViewer(ed.pics, Number(v.dataset.edView), $("#f-title").value.trim() || "New task"); return; }
+    const r = e.target.closest("[data-ed-remove]");
+    if (r) removeEdPic(Number(r.dataset.edRemove));
+  });
+  $("#pic-choose").addEventListener("click", () => $("#pic-input").click());
+  $("#pic-input").addEventListener("change", e => { addPictures([...e.target.files]); e.target.value = ""; });
+  const zone = $("#pic-zone");
+  zone.addEventListener("dragover", e => { e.preventDefault(); zone.classList.add("over"); });
+  zone.addEventListener("dragleave", () => zone.classList.remove("over"));
+  zone.addEventListener("drop", e => { e.preventDefault(); zone.classList.remove("over"); addPictures(imageFiles(e.dataTransfer)); });
+  $("#ed-delete").addEventListener("click", () => { $("#ed-confirm").hidden = false; $("#ed-delete").hidden = true; $("#ed-del-yes").focus(); });
+  $("#ed-del-no").addEventListener("click", () => { $("#ed-confirm").hidden = true; $("#ed-delete").hidden = false; });
+  $("#ed-del-yes").addEventListener("click", () => {
+    if (ed.id && tasks.has(ed.id)) { removeTask(ed.id); toast("Task deleted."); }
+    closeEditor();
+  });
+
+  /* Paste a picture into the open task, or anywhere on the desk to start a new task with it. */
+  function imageFiles(dt) {
+    if (!dt) return [];
+    const out = [];
+    for (const it of Array.from(dt.items || [])) if (it.kind === "file" && it.type.startsWith("image/")) { const f = it.getAsFile(); if (f) out.push(f); }
+    if (!out.length) for (const f of Array.from(dt.files || [])) if (f.type.startsWith("image/")) out.push(f);
+    return out;
+  }
+  const isTextField = el => !!el && (el.tagName === "TEXTAREA" || (el.tagName === "INPUT" && ["text", "search", "url", ""].includes(el.type)));
+  document.addEventListener("paste", e => {
+    if (ro || !pics.canAdd || viewerDlg.open) return;
+    const files = imageFiles(e.clipboardData);
+    if (!files.length) return;
+    if (isTextField(e.target) && Array.from(e.clipboardData.types || []).includes("text/plain")) return;
+    e.preventDefault();
+    if (!ed.open) openEditor(null);
+    addPictures(files);
+  });
+
+  /* Picture viewer */
+  const viewerDlg = $("#viewer");
+  const view = { list: [], i: 0, title: "" };
+  function openViewer(list, i, title) {
+    if (!list.length) return;
+    Object.assign(view, { list, i: Math.min(Math.max(i, 0), list.length - 1), title });
+    showPic();
+    try { viewerDlg.showModal(); } catch (e) { viewerDlg.setAttribute("open", ""); }
+  }
+  function showPic() {
+    const id = view.list[view.i], img = $("#viewer-img");
+    img.removeAttribute("src");
+    img.classList.remove("missing");
+    img.dataset.pic = id;
+    img.alt = `Picture ${view.i + 1} attached to ${view.title}`;
+    const src = pics.src(id);
+    if (src) img.src = src;
+    else pics.load(id).then(u => { if (img.dataset.pic !== id) return; if (u) img.src = u; else img.classList.add("missing"); });
+    $("#viewer-cap").textContent = `${view.title} · Picture ${view.i + 1} of ${view.list.length}`;
+    $("#viewer-nav").hidden = view.list.length < 2;
+  }
+  const stepPic = d => { view.i = (view.i + d + view.list.length) % view.list.length; showPic(); };
+  function closeViewer() { if (typeof viewerDlg.close === "function" && viewerDlg.open) viewerDlg.close(); else viewerDlg.removeAttribute("open"); }
+  viewerDlg.addEventListener("click", e => { if (e.target === viewerDlg || e.target.closest("[data-vclose]")) closeViewer(); });
+  viewerDlg.addEventListener("keydown", e => {
+    if (view.list.length < 2) return;
+    if (e.key === "ArrowLeft") stepPic(-1);
+    if (e.key === "ArrowRight") stepPic(1);
+  });
+  $("#viewer-prev").addEventListener("click", () => stepPic(-1));
+  $("#viewer-next").addEventListener("click", () => stepPic(1));
+
+  /* Toast */
+  let toastTimer = 0;
+  function toast(msg, undo) {
+    $("#toast-msg").textContent = msg;
+    const btn = $("#toast-undo");
+    btn.hidden = !undo;
+    btn.onclick = undo ? () => { undo(); hideToast(); } : null;
+    $("#toast").hidden = false;
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(hideToast, 6000);
+  }
+  function hideToast() { $("#toast").hidden = true; }
+
+  /* Wiring */
+  $("#views").addEventListener("click", e => {
+    const b = e.target.closest("button[data-view]");
+    if (!b) return;
+    ui.view = b.dataset.view; prefs.set("view", ui.view); render();
+  });
+  $(".tiles").addEventListener("click", e => {
+    const b = e.target.closest("[data-go]");
+    if (!b) return;
+    ui.view = b.dataset.go; prefs.set("view", ui.view); render();
+  });
+  $("#filter-project").addEventListener("change", e => { ui.project = e.target.value; prefs.set("project", ui.project); render(); });
+  $("#q").addEventListener("input", e => { ui.q = e.target.value.trim().toLowerCase(); render(); });
+  $("#new-task").addEventListener("click", () => openEditor(null));
+  $("#quick").addEventListener("submit", e => {
+    e.preventDefault();
+    const input = $("#quick-title"), title = input.value.trim();
+    input.value = "";
+    openEditor(null, title ? { title } : {});
+  });
+  $("#list").addEventListener("change", e => {
+    if (!e.target.classList.contains("check")) return;
+    const row = e.target.closest(".task");
+    if (row) toggleDone(row.dataset.id);
+  });
+  $("#list").addEventListener("click", e => {
+    const b = e.target.closest("[data-act]");
+    if (!b) return;
+    const act = b.dataset.act, row = b.closest(".task"), t = row && tasks.get(row.dataset.id);
+    if (act === "edit" && t) openEditor(t.id);
+    else if (act === "view" && t) openViewer(t.images, Number(b.dataset.i), t.title);
+    else if (act === "new") openEditor(null);
+    else if (act === "clear-filters") {
+      ui.project = ""; ui.q = ""; $("#q").value = "";
+      prefs.set("project", ""); render();
+    }
+  });
+  $("#notices").addEventListener("click", e => {
+    const b = e.target.closest("[data-act]");
+    if (!b) return;
+    if (b.dataset.act === "clear-ask") { ui.confirmClear = true; renderNotices(); }
+    else if (b.dataset.act === "clear-no") { ui.confirmClear = false; renderNotices(); }
+    else if (b.dataset.act === "clear-yes") {
+      ui.confirmClear = false;
+      const ids = [...tasks.values()].filter(t => t.starter).map(t => t.id);
+      ids.forEach(removeTask);
+      toast(`Cleared ${ids.length} starter task${ids.length === 1 ? "" : "s"}.`);
+    }
+  });
+  $("#cadence").addEventListener("click", e => {
+    const b = e.target.closest("button[data-lib]");
+    if (!b) return;
+    ui.lib = b.dataset.lib; prefs.set("lib", ui.lib); renderLibrary();
+  });
+  $("#lib-list").addEventListener("click", e => {
+    const add = e.target.closest("[data-add]");
+    if (!add) return;
+    const x = LIBRARY[Number(add.dataset.add)];
+    if (x) openEditor(null, { title: x.title, notes: x.notes, cat: x.cat, fw: x.fw, ctrl: x.ctrl, pri: x.pri, recur: x.recur });
+  });
+
+  /* Configuration: projects */
+  const nameTaken = (name, exceptId) => projectList().some(p => p.id !== exceptId && p.name.toLowerCase() === name.toLowerCase());
+  $("#add-project").addEventListener("submit", e => {
+    e.preventDefault();
+    if (ro) return;
+    const input = $("#project-name"), name = input.value.trim().slice(0, 80);
+    if (!name) { input.focus(); return; }
+    if (nameTaken(name)) { toast(`“${name}” is already one of your projects.`); return; }
+    put("projects", newId("projects"), { name, created: Date.now() });
+    input.value = "";
+    toast(`Added the project “${name}”.`);
+  });
+  function saveRename(id) {
+    const p = projects.get(id), input = $("#rename-input");
+    if (!p || !input) return;
+    const name = input.value.trim().slice(0, 80);
+    if (!name) { input.focus(); return; }
+    if (nameTaken(name, id)) { toast(`“${name}” is already one of your projects.`); return; }
+    ui.renaming = "";
+    if (name !== p.name) put("projects", id, { ...clean(p), name });
+    else renderConfig();
+  }
+  $("#project-list").addEventListener("click", e => {
+    const b = e.target.closest("[data-pact]");
+    if (!b || ro) return;
+    const act = b.dataset.pact, id = b.dataset.id;
+    if (act === "rename") { ui.renaming = id; ui.removing = ""; renderConfig(); const el = $("#rename-input"); if (el) { el.focus(); el.select(); } }
+    else if (act === "rename-cancel") { ui.renaming = ""; renderConfig(); }
+    else if (act === "rename-save") saveRename(id);
+    else if (act === "remove") { ui.removing = id; ui.renaming = ""; renderConfig(); }
+    else if (act === "remove-no") { ui.removing = ""; renderConfig(); }
+    else if (act === "remove-yes") {
+      const p = projects.get(id);
+      ui.removing = "";
+      if (ui.project === id) { ui.project = ""; prefs.set("project", ""); }
+      drop("projects", id);
+      if (p) toast(`Removed the project “${p.name}”.`);
+    }
+  });
+  $("#project-list").addEventListener("keydown", e => {
+    if (e.target.id !== "rename-input") return;
+    if (e.key === "Enter") { e.preventDefault(); saveRename(ui.renaming); }
+    if (e.key === "Escape") { e.preventDefault(); ui.renaming = ""; renderConfig(); }
+  });
+
+  /* Roll the desk over at midnight without a reload. */
+  const rollover = () => { if (today() !== lastDay) render(); };
+  setInterval(rollover, 60000);
+  document.addEventListener("visibilitychange", rollover);
+  /* Keep two tabs of a local copy in step. */
+  window.addEventListener("storage", e => {
+    if (mode === "browser" && (e.key === "grc-desk:tasks" || e.key === "grc-desk:projects")) { loadLocal(); render(); }
+  });
+
+  render();
+  boot();
+})();
+</script>
+</body>
+</html>
