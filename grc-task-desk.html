@@ -247,18 +247,28 @@ img.missing { visibility: hidden; }
 .proj-empty { padding: 10px 0; color: var(--muted); font-size: 13px; border-bottom: 1px solid var(--line); }
 .add-project { display: flex; gap: 8px; margin-top: 12px; }
 .add-project input { flex: 1; min-width: 0; }
-.cadence { display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: 4px; }
-.cadence button {
-  min-height: 28px; padding: 4px 10px; border: 1px solid var(--line); border-radius: 999px;
-  font: 500 12.5px/1 var(--f-body); color: var(--muted); background: transparent; cursor: pointer;
-}
-.cadence button:hover { color: var(--ink); border-color: var(--line-strong); }
-.cadence button[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: var(--on-accent); }
-.lib { list-style: none; margin: 0; padding: 0; }
-.lib li { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 10px; padding: 10px 0; border-bottom: 1px solid var(--line); }
-.lib-title { margin: 0; font-size: 13.5px; font-weight: 500; line-height: 1.35; }
+.lib-tools { display: grid; gap: 8px; }
+.lib-tools select { width: 100%; }
+.lib-buttons { display: flex; flex-wrap: wrap; gap: 6px; }
+.lib-group { margin-top: 14px; }
+.panel .lib-group h3 { margin: 0 0 4px; display: flex; align-items: baseline; gap: 6px; }
+.lib-group h3 .count { font-family: var(--f-mono); font-weight: 400; letter-spacing: 0; }
+.lib { list-style: none; margin: 0; padding: 0; border-top: 1px solid var(--line); }
+.lib-row { display: grid; gap: 6px; padding: 10px 0; border-bottom: 1px solid var(--line); }
+.lib-row .confirm { margin: 0; font-size: 13px; }
+.lib-title { margin: 0; font-size: 13.5px; font-weight: 500; line-height: 1.35; overflow-wrap: anywhere; }
 .lib-ref { margin: 4px 0 0; display: flex; flex-wrap: wrap; align-items: center; gap: 6px; font-family: var(--f-mono); font-size: 11.5px; color: var(--muted); }
-.in-list { font-size: 12px; color: var(--ok); white-space: nowrap; }
+.lib-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 4px; }
+.in-list { padding: 0 6px; font-size: 12px; color: var(--ok); white-space: nowrap; }
+.lib-empty { margin-top: 12px; padding: 14px; border: 1px dashed var(--line-strong); border-radius: 10px; font-size: 13px; color: var(--muted); }
+.lib-empty p { margin: 0; }
+.std-body { padding: 0 20px 12px; }
+.std-group h3 { margin: 16px 0 4px; font-size: 12px; font-weight: 600; letter-spacing: .07em; text-transform: uppercase; color: var(--muted); }
+.std-item { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 10px; align-items: start; padding: 8px 0; border-bottom: 1px solid var(--line); cursor: pointer; }
+.std-item input { width: 16px; height: 16px; margin: 2px 0 0; accent-color: var(--accent); }
+.std-item .lib-title { display: block; }
+.std-item.is-dup { cursor: default; opacity: .6; }
+.ed-head .hint { margin: 2px 0 0; }
 .codes { margin: 10px 0 0; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px 12px; }
 .codes div { display: flex; align-items: center; gap: 8px; min-width: 0; }
 .codes dt { flex: none; }
@@ -273,6 +283,10 @@ dialog {
 }
 dialog::backdrop { background: rgba(10, 24, 30, .5); background: var(--scrim, rgba(10, 24, 30, .5)); }
 .ed-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 16px 20px; border-bottom: 1px solid var(--line); }
+/* Long dialogs scroll between a pinned header and footer, so Save and Copy stay in reach. */
+dialog .ed-head, dialog .ed-foot { position: sticky; z-index: 1; background: var(--surface); }
+dialog .ed-head { top: 0; }
+dialog .ed-foot { bottom: 0; }
 .ed-head h2 { margin: 0; font-family: var(--f-display); font-size: 20px; font-weight: 600; }
 .icon-btn { flex: none; width: 32px; height: 32px; border: 0; border-radius: 8px; background: transparent; color: var(--muted); font-size: 22px; line-height: 1; cursor: pointer; }
 .icon-btn:hover { background: var(--sunken); color: var(--ink); }
@@ -420,15 +434,16 @@ kbd { font-family: var(--f-mono); font-size: 12px; padding: 0 4px; border: 1px s
       </section>
       <section class="panel" id="library">
         <h2>Routine library</h2>
-        <p class="sub">Standard GRC check-ins, each mapped to a control reference. Pick one, set its due date and project, and it repeats on its cadence.</p>
-        <div class="cadence" id="cadence" role="group" aria-label="Cadence">
-          <button type="button" data-lib="daily" aria-pressed="true">Daily</button>
-          <button type="button" data-lib="weekly" aria-pressed="false">Weekly</button>
-          <button type="button" data-lib="monthly" aria-pressed="false">Monthly</button>
-          <button type="button" data-lib="quarterly" aria-pressed="false">Quarterly</button>
-          <button type="button" data-lib="annual" aria-pressed="false">Annual</button>
+        <p class="sub">Your own check-ins for each project. Add one to your desk when it's due, and it repeats on its cadence.</p>
+        <div class="lib-tools">
+          <label class="sr" for="lib-project">Show the routine library for</label>
+          <select id="lib-project"></select>
+          <div class="lib-buttons" id="lib-buttons">
+            <button type="button" class="btn small primary" id="rt-new">New routine</button>
+            <button type="button" class="btn small" id="std-open">Copy standard check-ins</button>
+          </div>
         </div>
-        <ul class="lib" id="lib-list"></ul>
+        <div id="lib-list"></div>
       </section>
       <section class="panel">
         <h2>Area codes</h2>
@@ -489,6 +504,7 @@ kbd { font-family: var(--f-mono); font-size: 12px; padding: 0 4px; border: 1px s
     <p class="ed-history" id="ed-history" hidden></p>
     <div class="ed-foot">
       <div class="del-zone">
+        <button type="button" class="btn ghost" id="ed-routine">Save as routine</button>
         <button type="button" class="btn danger-ghost" id="ed-delete">Delete task</button>
         <span id="ed-confirm" hidden>Delete this task and its pictures?
           <button type="button" class="btn danger small" id="ed-del-yes">Delete</button>
@@ -503,6 +519,58 @@ kbd { font-family: var(--f-mono); font-size: 12px; padding: 0 4px; border: 1px s
   </form>
 </dialog>
 <datalist id="fw-list"></datalist>
+
+<dialog id="rt-editor" aria-labelledby="rt-heading">
+  <form id="rt-form" novalidate>
+    <div class="ed-head">
+      <h2 id="rt-heading">New routine</h2>
+      <button type="button" class="icon-btn" data-close aria-label="Close">×</button>
+    </div>
+    <div class="fields">
+      <div class="field span2">
+        <label for="r-title"><span class="field-label">Routine <em>*</em></span></label>
+        <input type="text" id="r-title" maxlength="200" required>
+        <p class="field-error" id="err-rtitle" hidden>Give the routine a title.</p>
+      </div>
+      <label class="field"><span>Library</span><select id="r-project"></select></label>
+      <label class="field"><span>Repeats</span><select id="r-recur"></select></label>
+      <label class="field"><span>Area</span><select id="r-cat"></select></label>
+      <label class="field"><span>Priority</span><select id="r-pri"></select></label>
+      <label class="field"><span>Framework</span><input type="text" id="r-fw" list="fw-list" placeholder="ISO 27001" maxlength="60"></label>
+      <label class="field"><span>Control reference</span><input type="text" id="r-ctrl" placeholder="A.5.18" maxlength="60"></label>
+      <label class="field"><span>Owner or stakeholder</span><input type="text" id="r-owner" placeholder="IT Operations" maxlength="80"></label>
+      <label class="field"><span>Evidence location</span><input type="text" id="r-evidence" placeholder="Link to the evidence folder" maxlength="500"></label>
+      <label class="field span2"><span>Notes</span><textarea id="r-notes" rows="4" maxlength="8000" placeholder="Steps, sources and contacts. Copied into each task you add from this routine."></textarea></label>
+    </div>
+    <div class="ed-foot">
+      <span></span>
+      <div class="acts">
+        <button type="button" class="btn ghost" data-close>Cancel</button>
+        <button type="submit" class="btn primary">Save routine</button>
+      </div>
+    </div>
+  </form>
+</dialog>
+
+<dialog id="std-picker" aria-labelledby="std-heading">
+  <form id="std-form">
+    <div class="ed-head">
+      <div>
+        <h2 id="std-heading">Copy standard check-ins</h2>
+        <p class="hint" id="std-into"></p>
+      </div>
+      <button type="button" class="icon-btn" data-close aria-label="Close">×</button>
+    </div>
+    <div class="std-body" id="std-list"></div>
+    <div class="ed-foot">
+      <button type="button" class="btn ghost" id="std-all">Select all</button>
+      <div class="acts">
+        <button type="button" class="btn ghost" data-close>Cancel</button>
+        <button type="submit" class="btn primary" id="std-copy" disabled>Copy check-ins</button>
+      </div>
+    </div>
+  </form>
+</dialog>
 
 <dialog id="viewer" class="viewer" aria-labelledby="viewer-cap">
   <div class="ed-head">
@@ -549,7 +617,8 @@ kbd { font-family: var(--f-mono); font-size: 12px; padding: 0 4px; border: 1px s
   const API = (document.querySelector('meta[name="grc-task-desk-api"]') || {}).content || "";
   const env = API ? "server" : window.claude && typeof window.claude.use === "function" ? "claude" : "browser";
 
-  const LIBRARY = [
+  /* Standard GRC check-ins, offered as a starting point to copy into any project's routine library. */
+  const STANDARD = [
     { recur: "daily", title: "Check the incident log for items with a regulatory clock", cat: "incident", fw: "GDPR", ctrl: "Art. 33", pri: "high", notes: "Personal data breaches go to the supervisory authority within 72 hours of becoming aware." },
     { recur: "daily", title: "Triage new policy exception requests", cat: "policy", fw: "ISO 27001", ctrl: "A.5.36", pri: "medium", notes: "" },
     { recur: "daily", title: "Work the audit evidence request queue", cat: "audit", fw: "SOC 2", ctrl: "", pri: "medium", notes: "Upload evidence to the auditor portal and update the request tracker." },
@@ -636,18 +705,19 @@ kbd { font-family: var(--f-mono); font-size: 12px; padding: 0 4px; border: 1px s
   const ui = {
     view: VIEWS.includes(prefs.get("view", "focus")) ? prefs.get("view", "focus") : "focus",
     project: String(prefs.get("project", "") || ""),
-    lib: RECUR[prefs.get("lib", "daily")] ? prefs.get("lib", "daily") : "daily",
+    libProject: prefs.get("libProject", null), // null: show the first project's library
     q: "",
     confirmClear: false,
     renaming: "",
     removing: "",
+    rtRemoving: "",
   };
 
   /* Store: the local app server keeps tasks and projects in its database. On claude.ai the db
      capability keeps them. A copy opened from disk keeps them in this browser's localStorage.
      Inside a claude.ai view without db, the page runs in this tab only. */
   let db = null, ro = false, mode = "connecting", pending = 0, lastDay = today(), localBlocked = false, rev = null;
-  const tasks = new Map(), projects = new Map();
+  const tasks = new Map(), projects = new Map(), routines = new Map();
   const queues = {};
 
   function normTask(id, b) {
@@ -673,8 +743,23 @@ kbd { font-family: var(--f-mono); font-size: 12px; padding: 0 4px; border: 1px s
     };
   }
   const normProject = (id, b) => ({ id, name: String(b.name || "Untitled project").slice(0, 80), created: Number(b.created) || 0 });
-  const MAPS = { tasks, projects };
-  const NORM = { tasks: normTask, projects: normProject };
+  const normRoutine = (id, b) => ({
+    id,
+    title: String(b.title || "Untitled routine"),
+    notes: String(b.notes || ""),
+    project: String(b.project || ""),
+    cat: CATS[b.cat] ? b.cat : "compliance",
+    fw: String(b.fw || ""),
+    ctrl: String(b.ctrl || ""),
+    pri: PRI[b.pri] ? b.pri : "medium",
+    recur: RECUR[b.recur] ? b.recur : "weekly",
+    owner: String(b.owner || ""),
+    evidence: String(b.evidence || ""),
+    created: Number(b.created) || 0,
+  });
+  const COLLS = ["tasks", "projects", "routines"];
+  const MAPS = { tasks, projects, routines };
+  const NORM = { tasks: normTask, projects: normProject, routines: normRoutine };
   const clean = t => { const { id, ...body } = t; return body; };
   const blank = () => normTask("", {
     title: "", cat: "compliance", pri: "medium", status: "todo", due: "", recur: "none",
@@ -727,7 +812,7 @@ kbd { font-family: var(--f-mono); font-size: 12px; padding: 0 4px; border: 1px s
   }
   async function loadServer() {
     const s = await api("GET", "/state");
-    for (const coll of ["tasks", "projects"]) {
+    for (const coll of COLLS) {
       MAPS[coll].clear();
       for (const b of s[coll] || []) if (b && typeof b.id === "string") MAPS[coll].set(b.id, NORM[coll](b.id, b));
     }
@@ -755,7 +840,7 @@ kbd { font-family: var(--f-mono); font-size: 12px; padding: 0 4px; border: 1px s
   }
   function loadLocal() {
     try { localStorage.setItem("grc-desk:probe", "1"); localStorage.removeItem("grc-desk:probe"); } catch (e) { localBlocked = true; }
-    for (const coll of ["tasks", "projects"]) {
+    for (const coll of COLLS) {
       MAPS[coll].clear();
       const saved = prefs.get(coll, {});
       if (saved && typeof saved === "object") {
@@ -896,13 +981,13 @@ kbd { font-family: var(--f-mono); font-size: 12px; padding: 0 4px; border: 1px s
     db = d;
     pics.assets = a;
     pics.canAdd = !!a && !ro;
-    const got = { tasks: false, projects: false };
-    for (const coll of ["tasks", "projects"]) {
+    const got = {};
+    for (const coll of COLLS) {
       db.collection(coll).onSnapshot(snap => {
         MAPS[coll].clear();
         for (const doc of snap.docs) { const b = doc.data(); if (b) MAPS[coll].set(doc.id, NORM[coll](doc.id, b)); }
         got[coll] = true;
-        if (got.tasks && got.projects) mode = "synced";
+        if (COLLS.every(c => got[c])) mode = "synced";
         render();
       }, () => { mode = "error"; render(); });
     }
@@ -1111,11 +1196,12 @@ kbd { font-family: var(--f-mono); font-size: 12px; padding: 0 4px; border: 1px s
     const draftEl = $("#rename-input");
     const draft = draftEl ? draftEl.value : null;
     const hadFocus = draftEl && document.activeElement === draftEl;
-    const open = {}, all = {};
+    const open = {}, all = {}, rts = {};
     for (const t of tasks.values()) {
       all[t.project] = (all[t.project] || 0) + 1;
       if (t.status !== "done") open[t.project] = (open[t.project] || 0) + 1;
     }
+    for (const r of routines.values()) rts[r.project] = (rts[r.project] || 0) + 1;
     const list = projectList();
     host.innerHTML = list.length ? list.map(p => {
       const n = open[p.id] || 0, count = `${n} open task${n === 1 ? "" : "s"}`;
@@ -1124,7 +1210,7 @@ kbd { font-family: var(--f-mono); font-size: 12px; padding: 0 4px; border: 1px s
           <div class="acts"><button type="button" class="btn small primary" data-pact="rename-save" data-id="${esc(p.id)}">Save</button><button type="button" class="btn small ghost" data-pact="rename-cancel">Cancel</button></div></li>`;
       }
       if (ui.removing === p.id && !ro) {
-        return `<li class="proj-row"><p class="confirm">Remove “${esc(p.name)}”?${all[p.id] ? " Its tasks stay on your desk under No project." : ""}</p>
+        return `<li class="proj-row"><p class="confirm">Remove “${esc(p.name)}”?${all[p.id] ? " Its tasks stay on your desk under No project." : ""}${rts[p.id] ? " Its routines move to the General library." : ""}</p>
           <div class="acts"><button type="button" class="btn small danger" data-pact="remove-yes" data-id="${esc(p.id)}">Remove</button><button type="button" class="btn small ghost" data-pact="remove-no">Keep</button></div></li>`;
       }
       return `<li class="proj-row"><div class="proj-info"><p class="proj-name">${esc(p.name)}</p><p class="proj-count">${count}</p></div>${ro ? ""
@@ -1133,16 +1219,49 @@ kbd { font-family: var(--f-mono); font-size: 12px; padding: 0 4px; border: 1px s
     $("#add-project").hidden = ro;
     if (hadFocus) { const el = $("#rename-input"); if (el) { el.focus(); el.setSelectionRange(el.value.length, el.value.length); } }
   }
-  const openTitles = () => new Set([...tasks.values()].filter(t => t.status !== "done").map(t => t.title.trim().toLowerCase()));
+  /* Routine library: each project keeps its own routines. "General" holds routines without a
+     project, including those of a project that was removed. */
+  const CADENCE_ORDER = ["daily", "weekly", "monthly", "quarterly", "annual", "none"];
+  const libLabel = key => key ? projectName(key) : "General";
+  const routineKey = (project, title) => (projects.has(project) ? project : "") + "\n" + title.trim().toLowerCase();
+  const libOptions = () => projectList().map(p => `<option value="${esc(p.id)}">${esc(p.name)}</option>`).join("") + `<option value="">General (no project)</option>`;
+  function libKey() {
+    if (ui.libProject == null) { const first = projectList()[0]; return first ? first.id : ""; }
+    return projects.has(ui.libProject) ? ui.libProject : "";
+  }
   function renderLibrary() {
-    for (const b of document.querySelectorAll("#cadence button")) b.setAttribute("aria-pressed", String(b.dataset.lib === ui.lib));
-    const have = openTitles();
-    $("#lib-list").innerHTML = LIBRARY.map((x, i) => ({ ...x, i })).filter(x => x.recur === ui.lib).map(x => {
-      const ref = [x.fw, x.ctrl].filter(Boolean).join(" · ");
-      const inList = have.has(x.title.toLowerCase());
-      const action = ro ? "" : inList ? `<span class="in-list">In your list</span>` : `<button type="button" class="btn small" data-add="${x.i}" aria-label="Add ${esc(x.title)}">Add</button>`;
-      return `<li><div><p class="lib-title">${esc(x.title)}</p><p class="lib-ref"><span class="code">${CATS[x.cat].code}</span>${ref ? esc(ref) : "No control reference"}</p></div>${action}</li>`;
+    if (ui.libProject && !projects.has(ui.libProject) && mode !== "connecting") { ui.libProject = null; prefs.set("libProject", null); }
+    const key = libKey();
+    const sel = $("#lib-project");
+    sel.innerHTML = libOptions();
+    sel.value = key;
+    $("#lib-buttons").hidden = ro;
+    const list = [...routines.values()].filter(r => (projects.has(r.project) ? r.project : "") === key);
+    if (!list.length) {
+      $("#lib-list").innerHTML = `<div class="lib-empty"><p>The ${esc(libLabel(key))} library is empty.${ro ? ""
+        : " Create your own routines, copy in standard GRC check-ins, or use Save as routine on any task."}</p></div>`;
+      return;
+    }
+    const openKeys = new Set([...tasks.values()].filter(t => t.status !== "done").map(t => routineKey(t.project, t.title)));
+    $("#lib-list").innerHTML = CADENCE_ORDER.map(c => {
+      const items = list.filter(r => r.recur === c).sort((a, b) => a.title.localeCompare(b.title));
+      if (!items.length) return "";
+      return `<div class="lib-group"><h3>${RECUR[c]} <span class="count">${items.length}</span></h3><ul class="lib">${items.map(r => routineRow(r, openKeys)).join("")}</ul></div>`;
     }).join("");
+  }
+  function routineRow(r, openKeys) {
+    if (ui.rtRemoving === r.id && !ro) {
+      return `<li class="lib-row"><p class="confirm">Delete the routine “${esc(r.title)}”? Tasks already on your desk stay.</p>
+        <div class="lib-actions"><button type="button" class="btn small danger" data-ract="delete-yes" data-id="${esc(r.id)}">Delete</button><button type="button" class="btn small ghost" data-ract="delete-no">Keep</button></div></li>`;
+    }
+    const ref = [r.fw, r.ctrl].filter(Boolean).join(" · ");
+    const inList = r.recur !== "none" && openKeys.has(routineKey(r.project, r.title));
+    const actions = ro ? "" : `<div class="lib-actions">${inList
+      ? `<span class="in-list">On your desk</span>`
+      : `<button type="button" class="btn small" data-ract="add" data-id="${esc(r.id)}" aria-label="Add “${esc(r.title)}” to your desk">Add to desk</button>`}`
+      + `<button type="button" class="btn small ghost" data-ract="edit" data-id="${esc(r.id)}" aria-label="Edit the routine “${esc(r.title)}”">Edit</button>`
+      + `<button type="button" class="btn small ghost" data-ract="delete" data-id="${esc(r.id)}" aria-label="Delete the routine “${esc(r.title)}”">Delete</button></div>`;
+    return `<li class="lib-row"><div><p class="lib-title">${esc(r.title)}</p><p class="lib-ref"><span class="code" title="${esc(CATS[r.cat].name)}">${CATS[r.cat].code}</span>${esc(ref || "No control reference")} · ${RECUR[r.recur]}</p></div>${actions}</li>`;
   }
   function render() {
     const now = today();
@@ -1223,6 +1342,7 @@ kbd { font-family: var(--f-mono); font-size: 12px; padding: 0 4px; border: 1px s
     $("#ed-fields").disabled = ro;
     $("#ed-save").hidden = ro;
     $("#ed-delete").hidden = !cur || ro;
+    $("#ed-routine").hidden = ro;
     $("#ed-confirm").hidden = true;
     renderEdPics();
     try { editor.showModal(); } catch (e) { editor.setAttribute("open", ""); }
@@ -1407,7 +1527,13 @@ kbd { font-family: var(--f-mono); font-size: 12px; padding: 0 4px; border: 1px s
     if (!b) return;
     ui.view = b.dataset.go; prefs.set("view", ui.view); render();
   });
-  $("#filter-project").addEventListener("change", e => { ui.project = e.target.value; prefs.set("project", ui.project); render(); });
+  $("#filter-project").addEventListener("change", e => {
+    ui.project = e.target.value;
+    prefs.set("project", ui.project);
+    // Picking a project on the desk also shows its routine library.
+    if (projects.has(ui.project)) { ui.libProject = ui.project; prefs.set("libProject", ui.project); }
+    render();
+  });
   $("#q").addEventListener("input", e => { ui.q = e.target.value.trim().toLowerCase(); render(); });
   $("#new-task").addEventListener("click", () => openEditor(null));
   $("#quick").addEventListener("submit", e => {
@@ -1445,16 +1571,155 @@ kbd { font-family: var(--f-mono); font-size: 12px; padding: 0 4px; border: 1px s
       toast(`Cleared ${ids.length} starter task${ids.length === 1 ? "" : "s"}.`);
     }
   });
-  $("#cadence").addEventListener("click", e => {
-    const b = e.target.closest("button[data-lib]");
-    if (!b) return;
-    ui.lib = b.dataset.lib; prefs.set("lib", ui.lib); renderLibrary();
-  });
+  /* Routine library actions */
+  const closeDialog = dlg => { if (typeof dlg.close === "function" && dlg.open) dlg.close(); else dlg.removeAttribute("open"); };
+  const openDialog = dlg => { try { dlg.showModal(); } catch (e) { dlg.setAttribute("open", ""); } };
+  function showLibrary(key) { ui.libProject = key; ui.rtRemoving = ""; prefs.set("libProject", key); renderLibrary(); }
+  function routineTaken(project, title, exceptId) {
+    const k = routineKey(project, title);
+    return [...routines.values()].some(r => r.id !== exceptId && routineKey(r.project, r.title) === k);
+  }
+  $("#lib-project").addEventListener("change", e => showLibrary(e.target.value));
+  $("#rt-new").addEventListener("click", () => openRoutineEditor(null));
+  $("#std-open").addEventListener("click", () => openStdPicker());
   $("#lib-list").addEventListener("click", e => {
-    const add = e.target.closest("[data-add]");
-    if (!add) return;
-    const x = LIBRARY[Number(add.dataset.add)];
-    if (x) openEditor(null, { title: x.title, notes: x.notes, cat: x.cat, fw: x.fw, ctrl: x.ctrl, pri: x.pri, recur: x.recur });
+    const b = e.target.closest("[data-ract]");
+    if (!b || ro) return;
+    const act = b.dataset.ract, r = routines.get(b.dataset.id);
+    if (act === "delete-no") { ui.rtRemoving = ""; renderLibrary(); return; }
+    if (!r) return;
+    if (act === "add") {
+      openEditor(null, {
+        title: r.title, notes: r.notes, cat: r.cat, fw: r.fw, ctrl: r.ctrl, pri: r.pri, recur: r.recur,
+        owner: r.owner, evidence: r.evidence, project: projects.has(r.project) ? r.project : "",
+      });
+    } else if (act === "edit") openRoutineEditor(r.id);
+    else if (act === "delete") { ui.rtRemoving = r.id; renderLibrary(); }
+    else if (act === "delete-yes") { ui.rtRemoving = ""; drop("routines", r.id); toast(`Deleted the routine “${r.title}”.`); }
+  });
+
+  const rtEditor = $("#rt-editor");
+  let rtEditingId = null;
+  fillSelect($("#r-recur"), RECUR);
+  fillSelect($("#r-cat"), CATS);
+  fillSelect($("#r-pri"), PRI);
+  function openRoutineEditor(id) {
+    const cur = id ? routines.get(id) : null;
+    if (ro || (id && !cur)) return;
+    rtEditingId = cur ? id : null;
+    const r = cur || normRoutine("", { recur: "weekly", project: libKey() });
+    $("#rt-heading").textContent = cur ? "Edit routine" : "New routine";
+    $("#r-title").value = cur ? r.title : "";
+    $("#r-project").innerHTML = libOptions();
+    $("#r-project").value = projects.has(r.project) ? r.project : "";
+    $("#r-recur").value = r.recur;
+    $("#r-cat").value = r.cat;
+    $("#r-pri").value = r.pri;
+    $("#r-fw").value = r.fw;
+    $("#r-ctrl").value = r.ctrl;
+    $("#r-owner").value = r.owner;
+    $("#r-evidence").value = r.evidence;
+    $("#r-notes").value = r.notes;
+    $("#err-rtitle").hidden = true;
+    $("#r-title").removeAttribute("aria-invalid");
+    openDialog(rtEditor);
+    $("#r-title").focus();
+  }
+  rtEditor.addEventListener("click", e => { if (e.target === rtEditor || e.target.closest("[data-close]")) closeDialog(rtEditor); });
+  $("#rt-form").addEventListener("submit", e => {
+    e.preventDefault();
+    if (ro) return;
+    const title = $("#r-title").value.trim(), project = $("#r-project").value;
+    $("#err-rtitle").hidden = !!title;
+    $("#r-title").setAttribute("aria-invalid", String(!title));
+    if (!title) { $("#r-title").focus(); return; }
+    if (routineTaken(project, title, rtEditingId)) { toast(`“${title}” is already in the ${libLabel(project)} library.`); return; }
+    const cur = rtEditingId && routines.get(rtEditingId);
+    put("routines", cur ? rtEditingId : newId("routines"), {
+      ...(cur ? clean(cur) : { created: Date.now() }),
+      title,
+      project,
+      recur: $("#r-recur").value,
+      cat: $("#r-cat").value,
+      pri: $("#r-pri").value,
+      fw: $("#r-fw").value.trim(),
+      ctrl: $("#r-ctrl").value.trim(),
+      owner: $("#r-owner").value.trim(),
+      evidence: $("#r-evidence").value.trim(),
+      notes: $("#r-notes").value.trim(),
+    });
+    showLibrary(project);
+    closeDialog(rtEditor);
+    toast(cur ? "Routine saved." : `Added to the ${libLabel(project)} library.`);
+  });
+
+  /* Copy standard check-ins into the library on show */
+  const stdDlg = $("#std-picker");
+  let stdKey = "";
+  const stdBoxes = () => [...stdDlg.querySelectorAll('input[type="checkbox"]:not(:disabled)')];
+  function openStdPicker() {
+    if (ro) return;
+    stdKey = libKey();
+    $("#std-into").textContent = `Into the ${libLabel(stdKey)} library. You can edit them afterwards.`;
+    $("#std-list").innerHTML = CADENCE_ORDER.filter(c => c !== "none").map(c => `<div class="std-group"><h3>${RECUR[c]}</h3>${
+      STANDARD.map((x, i) => ({ ...x, i })).filter(x => x.recur === c).map(x => {
+        const dup = routineTaken(stdKey, x.title);
+        const ref = [x.fw, x.ctrl].filter(Boolean).join(" · ") || "No control reference";
+        return `<label class="std-item${dup ? " is-dup" : ""}"><input type="checkbox" value="${x.i}"${dup ? " disabled" : ""}>`
+          + `<span><span class="lib-title">${esc(x.title)}</span><span class="lib-ref"><span class="code">${CATS[x.cat].code}</span>${esc(ref)}${dup ? " · already in this library" : ""}</span></span></label>`;
+      }).join("")}</div>`).join("");
+    updateStdCount();
+    openDialog(stdDlg);
+  }
+  function updateStdCount() {
+    const boxes = stdBoxes(), n = boxes.filter(b => b.checked).length;
+    $("#std-copy").disabled = !n;
+    $("#std-copy").textContent = n ? `Copy ${n} check-in${n === 1 ? "" : "s"}` : "Copy check-ins";
+    $("#std-all").hidden = !boxes.length;
+    $("#std-all").textContent = boxes.length && boxes.every(b => b.checked) ? "Clear selection" : "Select all";
+  }
+  stdDlg.addEventListener("change", updateStdCount);
+  stdDlg.addEventListener("click", e => { if (e.target === stdDlg || e.target.closest("[data-close]")) closeDialog(stdDlg); });
+  $("#std-all").addEventListener("click", () => {
+    const boxes = stdBoxes(), on = !boxes.every(b => b.checked);
+    boxes.forEach(b => { b.checked = on; });
+    updateStdCount();
+  });
+  $("#std-form").addEventListener("submit", e => {
+    e.preventDefault();
+    if (ro) return;
+    const picked = stdBoxes().filter(b => b.checked).map(b => STANDARD[Number(b.value)]).filter(Boolean);
+    picked.forEach((x, n) => put("routines", newId("routines"), {
+      title: x.title, notes: x.notes, cat: x.cat, fw: x.fw, ctrl: x.ctrl, pri: x.pri, recur: x.recur,
+      owner: "", evidence: "", project: stdKey, created: Date.now() + n,
+    }));
+    showLibrary(stdKey);
+    closeDialog(stdDlg);
+    if (picked.length) toast(`Copied ${picked.length} check-in${picked.length === 1 ? "" : "s"} into the ${libLabel(stdKey)} library.`);
+  });
+
+  /* Save the task being edited as a routine in its project's library. */
+  $("#ed-routine").addEventListener("click", () => {
+    if (ro) return;
+    const title = $("#f-title").value.trim();
+    if (!title) { showErrors(false, $("#err-due").hidden); $("#f-title").focus(); return; }
+    const project = projects.has($("#f-project").value) ? $("#f-project").value : "";
+    if (routineTaken(project, title)) { toast(`“${title}” is already in the ${libLabel(project)} library.`); return; }
+    put("routines", newId("routines"), {
+      title,
+      project,
+      recur: $("#f-recur").value,
+      cat: $("#f-cat").value,
+      pri: $("#f-pri").value,
+      fw: $("#f-fw").value.trim(),
+      ctrl: $("#f-ctrl").value.trim(),
+      owner: $("#f-owner").value.trim(),
+      evidence: $("#f-evidence").value.trim(),
+      notes: $("#f-notes").value.trim(),
+      created: Date.now(),
+    });
+    showLibrary(project);
+    toast(`Saved as a routine in the ${libLabel(project)} library.`);
   });
 
   /* Configuration: projects */
@@ -1492,6 +1757,7 @@ kbd { font-family: var(--f-mono); font-size: 12px; padding: 0 4px; border: 1px s
       const p = projects.get(id);
       ui.removing = "";
       if (ui.project === id) { ui.project = ""; prefs.set("project", ""); }
+      if (ui.libProject === id) { ui.libProject = null; prefs.set("libProject", null); }
       drop("projects", id);
       if (p) toast(`Removed the project “${p.name}”.`);
     }
@@ -1508,7 +1774,7 @@ kbd { font-family: var(--f-mono); font-size: 12px; padding: 0 4px; border: 1px s
   document.addEventListener("visibilitychange", rollover);
   /* Keep two tabs of a local copy in step. */
   window.addEventListener("storage", e => {
-    if (mode === "browser" && (e.key === "grc-desk:tasks" || e.key === "grc-desk:projects")) { loadLocal(); render(); }
+    if (mode === "browser" && COLLS.some(c => e.key === "grc-desk:" + c)) { loadLocal(); render(); }
   });
 
   render();

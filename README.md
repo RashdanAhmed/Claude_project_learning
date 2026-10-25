@@ -21,7 +21,7 @@ The three don't share data: each keeps its own tasks.
 - **Notes** on every task, written when you create it and edited later.
 - **Pictures**: paste a screenshot (Ctrl+V or ⌘V), drop image files, or choose them. They show as thumbnails on the task and open full size. Pasting a picture anywhere on the desk starts a new task with it.
 - **Recurring tasks** (daily, weekly, monthly, quarterly, annual): ticking one logs the cycle and moves it to the next due date.
-- **Routine library**: 26 standard GRC check-ins mapped to ISO/IEC 27001:2022, SOC 2, NIST CSF 2.0, PCI DSS v4.0 and GDPR references. Adding one opens the task form so you set its due date and project.
+- **Routine libraries per project**: each project has its own library of routines you create, edit and delete, plus a General library for routines without a project. A routine holds a title, cadence, area, priority, framework, control reference, owner, evidence location and notes. **Add to desk** opens the task form filled in from the routine, so you only set the due date. **Save as routine** in the task form turns a task into a routine. **Copy standard check-ins** copies any of 26 standard GRC check-ins (mapped to ISO/IEC 27001:2022, SOC 2, NIST CSF 2.0, PCI DSS v4.0 and GDPR references) into a library as a starting point. Removing a project moves its routines to General.
 - **Task fields**: title, project, due date, notes, pictures, priority, cadence, status, area, framework, control reference, owner or stakeholder and evidence location.
 - **Backup** (app only): download tasks, projects and pictures as one zip file.
 

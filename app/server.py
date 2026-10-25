@@ -34,7 +34,7 @@ if sys.version_info < (3, 8):
 
 APP_DIR = Path(__file__).resolve().parent
 INDEX = APP_DIR / "static" / "index.html"
-COLLECTIONS = ("tasks", "projects")
+COLLECTIONS = ("tasks", "projects", "routines")
 ID_RE = re.compile(r"^[A-Za-z0-9_-]{1,64}$")
 MAX_JSON_BYTES = 1024 * 1024
 MAX_PICTURE_BYTES = 20 * 1024 * 1024
