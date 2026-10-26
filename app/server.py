@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """GRC Task Desk: runs the task desk as a web app on this computer.
 
-Needs Python 3.8 or later and nothing else. Tasks and projects are kept in a
-SQLite database and pictures as files, all inside one data folder.
+Needs Python 3.8 or later and nothing else. Tasks, projects and routines are kept
+in a SQLite database and pictures as files, all inside one data folder.
 
     python3 server.py              serve http://localhost:8765/
     python3 server.py --open       ...and open it in your browser
@@ -63,7 +63,7 @@ def sniff_picture(data):
 
 
 class Store:
-    """Tasks and projects as JSON documents in SQLite, pictures as files beside the database."""
+    """Tasks, projects and routines as JSON documents in SQLite, pictures as files beside the database."""
 
     def __init__(self, data_dir):
         self.data_dir = data_dir

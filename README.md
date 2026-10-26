@@ -15,7 +15,8 @@ The three don't share data: each keeps its own tasks.
 ## What it does
 
 - **Triage strip**: overdue, due today, next 7 days, waiting on others, and check-ins done this week.
-- **Views**: Focus (overdue, due today and in progress), Next 7 days, All open, Waiting, Recurring, Done.
+- **Views**: Focus (overdue, due today and in progress), Next 7 days, All open, Waiting, Recurring, Done, Bin.
+- **Recycle bin**: deleting a task, from its row, its form or the Done view's **Delete all completed**, moves it to the bin with an Undo. Tasks stay in the bin for 30 days, where you can restore them or delete them for good; after 30 days they and their pictures are deleted automatically. **Empty bin** clears it at once.
 - **Projects**: add, rename and remove the projects you're working on under **Configuration**, assign each task to one, and filter the desk by project. Search covers titles, notes, projects, control references and owners.
 - **Due dates are set by hand**: a task can't be saved without one.
 - **Notes** on every task, written when you create it and edited later.

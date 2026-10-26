@@ -160,6 +160,7 @@ aside { display: grid; gap: 16px; min-width: 0; }
 }
 .views button:hover { color: var(--ink); }
 .views button[aria-pressed="true"] { background: var(--surface); color: var(--ink); box-shadow: var(--shadow-sm); }
+.views .n { font-family: var(--f-mono); font-size: 12px; color: var(--muted); }
 .filters { display: flex; gap: 8px; }
 .filters select { max-width: 260px; }
 
@@ -184,6 +185,8 @@ aside { display: grid; gap: 16px; min-width: 0; }
   font-family: var(--f-display); font-size: 14px; font-weight: 600; letter-spacing: .07em; text-transform: uppercase;
 }
 .group h2 .count { font-family: var(--f-mono); font-weight: 400; letter-spacing: 0; color: var(--muted); }
+.group-head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 6px 12px; min-height: 28px; }
+.group-head .acts { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; font-size: 13px; }
 .group[data-key="overdue"] h2 { color: var(--crit); }
 .group[data-key="today"] h2 { color: var(--warn); }
 .tasklist { list-style: none; margin: 0; padding: 0; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; }
@@ -230,6 +233,12 @@ img.missing { visibility: hidden; }
 .pill.doing { background: var(--accent-soft); color: var(--accent); }
 .pill.waiting { background: var(--wait-soft); color: var(--wait); }
 .task.is-done .title { text-decoration: line-through; color: var(--muted); }
+.row-acts { display: flex; flex-wrap: wrap; justify-content: flex-end; align-items: center; gap: 2px; }
+.confirm-text { font-size: 12.5px; padding-right: 4px; }
+.task.binned { grid-template-columns: minmax(0, 1fr) auto; }
+.title-text { font-size: 15px; font-weight: 500; line-height: 1.35; color: var(--muted); overflow-wrap: anywhere; }
+.purge-in { font-size: 12px; color: var(--muted); white-space: nowrap; }
+.purge-in[data-tone="crit"] { color: var(--crit); }
 
 .empty {
   display: grid; justify-items: start; gap: 10px; padding: 28px 24px;
@@ -333,8 +342,7 @@ kbd { font-family: var(--f-mono); font-size: 12px; padding: 0 4px; border: 1px s
 .ed-history { margin: 0; padding: 0 20px 12px; font-size: 12.5px; color: var(--muted); }
 .ed-history .ref { color: var(--ink); }
 .ed-foot { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px; padding: 12px 20px 16px; border-top: 1px solid var(--line); }
-.ed-foot .acts, .del-zone, #ed-confirm { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
-#ed-confirm { font-size: 13px; }
+.ed-foot .acts, .del-zone { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
 
 .viewer { width: min(1000px, calc(100vw - 32px)); }
 .viewer .ed-head p { margin: 0; font-size: 13.5px; color: var(--muted); overflow-wrap: anywhere; }
@@ -364,6 +372,9 @@ kbd { font-family: var(--f-mono); font-size: 12px; padding: 0 4px; border: 1px s
   .filters, .filters select { width: 100%; max-width: none; }
   .task { grid-template-columns: auto minmax(0, 1fr); }
   .side { grid-column: 2; display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-start; text-align: left; }
+  .task.binned { grid-template-columns: minmax(0, 1fr); }
+  .task.binned .side { grid-column: 1; }
+  .row-acts { justify-content: flex-start; }
   .pills { justify-content: flex-start; }
   .fields { grid-template-columns: minmax(0, 1fr); }
   .codes { grid-template-columns: minmax(0, 1fr); }
@@ -407,6 +418,7 @@ kbd { font-family: var(--f-mono); font-size: 12px; padding: 0 4px; border: 1px s
           <button type="button" data-view="waiting" aria-pressed="false">Waiting</button>
           <button type="button" data-view="recurring" aria-pressed="false">Recurring</button>
           <button type="button" data-view="done" aria-pressed="false">Done</button>
+          <button type="button" data-view="bin" aria-pressed="false">Bin <span class="n" id="bin-count"></span></button>
         </div>
         <div class="filters">
           <label class="sr" for="filter-project">Filter by project</label>
@@ -515,10 +527,6 @@ kbd { font-family: var(--f-mono); font-size: 12px; padding: 0 4px; border: 1px s
       <div class="del-zone">
         <button type="button" class="btn ghost" id="ed-routine">Save as routine</button>
         <button type="button" class="btn danger-ghost" id="ed-delete">Delete task</button>
-        <span id="ed-confirm" hidden>Delete this task and its pictures?
-          <button type="button" class="btn danger small" id="ed-del-yes">Delete</button>
-          <button type="button" class="btn ghost small" id="ed-del-no">Keep it</button>
-        </span>
       </div>
       <div class="acts">
         <button type="button" class="btn ghost" data-close>Cancel</button>
@@ -584,7 +592,7 @@ kbd { font-family: var(--f-mono); font-size: 12px; padding: 0 4px; border: 1px s
 <dialog id="viewer" class="viewer" aria-labelledby="viewer-cap">
   <div class="ed-head">
     <p id="viewer-cap"></p>
-    <button type="button" class="icon-btn" data-vclose aria-label="Close">×</button>
+    <button type="button" class="icon-btn" data-close aria-label="Close">×</button>
   </div>
   <div class="viewer-body"><img id="viewer-img" alt=""></div>
   <div class="viewer-foot" id="viewer-nav">
@@ -710,24 +718,29 @@ kbd { font-family: var(--f-mono); font-size: 12px; padding: 0 4px; border: 1px s
     get(k, d) { try { const v = localStorage.getItem("grc-desk:" + k); return v == null ? d : JSON.parse(v); } catch (e) { return d; } },
     set(k, v) { try { localStorage.setItem("grc-desk:" + k, JSON.stringify(v)); } catch (e) { /* storage unavailable */ } },
   };
-  const VIEWS = ["focus", "week", "open", "waiting", "recurring", "done"];
+  const VIEWS = ["focus", "week", "open", "waiting", "recurring", "done", "bin"];
   const ui = {
     view: VIEWS.includes(prefs.get("view", "focus")) ? prefs.get("view", "focus") : "focus",
     project: String(prefs.get("project", "") || ""),
     libProject: prefs.get("libProject", null), // null: show the first project's library
     q: "",
     confirmClear: false,
+    confirmDoneClear: false,
+    confirmEmpty: false,
+    purging: "",
     renaming: "",
     removing: "",
     rtRemoving: "",
+    libFocus: "",
   };
 
-  /* Store: the local app server keeps tasks and projects in its database. On claude.ai the db
-     capability keeps them. A copy opened from disk keeps them in this browser's localStorage.
+  /* Store: the local app server keeps tasks, projects and routines in its database. On claude.ai
+     the db capability keeps them. A copy opened from disk keeps them in this browser's localStorage.
      Inside a claude.ai view without db, the page runs in this tab only. */
   let db = null, ro = false, mode = "connecting", pending = 0, lastDay = today(), localBlocked = false, rev = null;
   const tasks = new Map(), projects = new Map(), routines = new Map();
-  const queues = {};
+  const dataLoaded = () => mode === "server" || mode === "synced" || mode === "browser";
+  const BIN_DAYS = 30;
 
   function normTask(id, b) {
     return {
@@ -749,6 +762,8 @@ kbd { font-family: var(--f-mono); font-size: 12px; padding: 0 4px; border: 1px s
       completedAt: String(b.completedAt || ""),
       created: Number(b.created) || 0,
       starter: !!b.starter,
+      routine: String(b.routine || ""), // the routine this task was added from, if any
+      deletedAt: Number(b.deletedAt) || 0, // set while the task sits in the bin
     };
   }
   const normProject = (id, b) => ({ id, name: String(b.name || "Untitled project").slice(0, 80), created: Number(b.created) || 0 });
@@ -777,32 +792,37 @@ kbd { font-family: var(--f-mono); font-size: 12px; padding: 0 4px; border: 1px s
   const newId = coll => db ? db.collection(coll).doc().id : Date.now().toString(36) + Math.random().toString(36).slice(2, 10);
   const projectList = () => [...projects.values()].sort((a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: "base" }));
   const projectName = id => (projects.get(id) || {}).name || "";
+  const projectOptions = () => projectList().map(p => `<option value="${esc(p.id)}">${esc(p.name)}</option>`).join("");
 
-  function track(key, op) {
+  /* Writes go out one at a time and in order, so a burst (copying check-ins, emptying the bin)
+     never floods the store and a later change can't overtake an earlier one. */
+  let writes = Promise.resolve();
+  function track(op) {
     pending++; renderSync();
-    queues[key] = (queues[key] || Promise.resolve())
-      .then(op)
-      .catch(onWriteError)
-      .finally(() => { pending--; renderSync(); });
+    writes = writes.then(op).catch(onWriteError).finally(() => { pending--; renderSync(); });
   }
-  function put(coll, id, body) {
-    if (ro) return;
-    MAPS[coll].set(id, NORM[coll](id, body));
+  function putMany(coll, entries) {
+    if (ro || !entries.length) return;
+    for (const [id, body] of entries) MAPS[coll].set(id, NORM[coll](id, body));
     render();
-    if (env === "server") { track(coll + "/" + id, () => api("PUT", `/${coll}/${encodeURIComponent(id)}`, body).then(noteRevision)); return; }
-    if (!db) { persistLocal(coll); return; }
-    const ref = db.collection(coll).doc(id);
-    track(coll + "/" + id, () => ref.set(body));
+    for (const [id, body] of entries) {
+      if (env === "server") track(() => api("PUT", `/${coll}/${encodeURIComponent(id)}`, body).then(noteRevision));
+      else if (db) { const ref = db.collection(coll).doc(id); track(() => ref.set(body)); }
+    }
+    if (env !== "server" && !db) persistLocal(coll);
   }
-  function drop(coll, id) {
-    if (ro) return;
-    MAPS[coll].delete(id);
+  function dropMany(coll, ids) {
+    if (ro || !ids.length) return;
+    for (const id of ids) MAPS[coll].delete(id);
     render();
-    if (env === "server") { track(coll + "/" + id, () => api("DELETE", `/${coll}/${encodeURIComponent(id)}`).then(noteRevision)); return; }
-    if (!db) { persistLocal(coll); return; }
-    const ref = db.collection(coll).doc(id);
-    track(coll + "/" + id, () => ref.delete());
+    for (const id of ids) {
+      if (env === "server") track(() => api("DELETE", `/${coll}/${encodeURIComponent(id)}`).then(noteRevision));
+      else if (db) { const ref = db.collection(coll).doc(id); track(() => ref.delete()); }
+    }
+    if (env !== "server" && !db) persistLocal(coll);
   }
+  const put = (coll, id, body) => putMany(coll, [[id, body]]);
+  const drop = (coll, id) => dropMany(coll, [id]);
 
   /* Local app server: a small JSON API next to the page. */
   async function api(method, path, body) {
@@ -841,11 +861,33 @@ kbd { font-family: var(--f-mono); font-size: 12px; padding: 0 4px; border: 1px s
     }
   }
   const save = (id, body) => put("tasks", id, body);
-  function removeTask(id) {
+
+  /* Recycle bin: a deleted task keeps everything and gains deletedAt. After BIN_DAYS it is
+     deleted for good, with its pictures, the next time the page opens or the day rolls over. */
+  const liveTasks = () => [...tasks.values()].filter(t => !t.deletedAt);
+  const binTasks = () => [...tasks.values()].filter(t => t.deletedAt);
+  function moveToBin(ids) {
+    const list = ids.map(id => tasks.get(id)).filter(t => t && !t.deletedAt);
+    const at = Date.now();
+    putMany("tasks", list.map(t => [t.id, { ...clean(t), deletedAt: at }]));
+    return list;
+  }
+  const restoreTasks = list => putMany("tasks", list.map(t => [t.id, { ...clean(t), deletedAt: 0 }]));
+  function binToast(list) {
+    if (!list.length) return;
+    const what = list.length === 1 ? `“${list[0].title}”` : `${list.length} tasks`;
+    toast(`Moved ${what} to the bin.`, () => restoreTasks(list));
+  }
+  function deleteForGood(ids) {
     if (ro) return;
-    const t = tasks.get(id);
-    drop("tasks", id);
-    if (t) t.images.forEach(p => pics.del(p));
+    const list = ids.map(id => tasks.get(id)).filter(Boolean);
+    dropMany("tasks", list.map(t => t.id));
+    list.forEach(t => t.images.forEach(p => pics.del(p)));
+  }
+  function purgeExpired() {
+    if (ro || !dataLoaded()) return;
+    const cutoff = Date.now() - BIN_DAYS * 864e5;
+    deleteForGood(binTasks().filter(t => t.deletedAt < cutoff).map(t => t.id));
   }
   function loadLocal() {
     try { localStorage.setItem("grc-desk:probe", "1"); localStorage.removeItem("grc-desk:probe"); } catch (e) { localBlocked = true; }
@@ -877,7 +919,9 @@ kbd { font-family: var(--f-mono); font-size: 12px; padding: 0 4px; border: 1px s
       ro = true; render();
       toast("This list is view-only for you, so that change wasn't saved.");
     } else if (code === "quota_exceeded") {
-      toast("The task store is full. Delete finished tasks to make room.");
+      toast("The task store is full. Empty the bin or delete finished tasks to make room.");
+    } else if (code === "resource_exhausted" || code === "rate_limited") {
+      toast("Too many changes at once. Wait a moment, then reload to check they saved.");
     } else if (code === "revoked") {
       mode = "error"; render();
     } else {
@@ -970,6 +1014,7 @@ kbd { font-family: var(--f-mono); font-size: 12px; padding: 0 4px; border: 1px s
       try { await loadServer(); mode = "server"; } catch (e) { mode = "offline"; }
       pics.canAdd = true;
       render();
+      purgeExpired();
       setInterval(poll, 10000);
       document.addEventListener("visibilitychange", () => { if (!document.hidden) poll(); });
       return;
@@ -980,6 +1025,7 @@ kbd { font-family: var(--f-mono); font-size: 12px; padding: 0 4px; border: 1px s
       render();
       try { if (window.indexedDB) { pics.idb = await idbOpen(); pics.canAdd = true; } } catch (e) { pics.canAdd = false; }
       render();
+      purgeExpired();
       return;
     }
     const c = window.claude;
@@ -991,6 +1037,7 @@ kbd { font-family: var(--f-mono); font-size: 12px; padding: 0 4px; border: 1px s
     pics.assets = a;
     pics.canAdd = !!a && !ro;
     const got = {};
+    let purged = false;
     for (const coll of COLLS) {
       db.collection(coll).onSnapshot(snap => {
         MAPS[coll].clear();
@@ -998,6 +1045,7 @@ kbd { font-family: var(--f-mono); font-size: 12px; padding: 0 4px; border: 1px s
         got[coll] = true;
         if (COLLS.every(c => got[c])) mode = "synced";
         render();
+        if (mode === "synced" && !purged) { purged = true; purgeExpired(); }
       }, () => { mode = "error"; render(); });
     }
   }
@@ -1026,9 +1074,13 @@ kbd { font-family: var(--f-mono); font-size: 12px; padding: 0 4px; border: 1px s
       const ws = weekStart(now);
       const done = list.filter(t => t.status === "done").sort((a, b) => b.completedAt.localeCompare(a.completedAt) || a.title.localeCompare(b.title));
       const logged = list.filter(t => t.status !== "done" && t.history.some(h => h >= ws)).sort((a, b) => b.history[0].localeCompare(a.history[0]));
+      const n = done.length, s = n === 1 ? "" : "s";
+      const clear = ro || !n ? "" : ui.confirmDoneClear
+        ? `<div class="acts"><span>Move ${n} completed task${s} to the bin?</span><button type="button" class="btn small danger" id="done-clear-yes" data-act="done-clear-yes">Move to bin</button><button type="button" class="btn small ghost" data-act="done-clear-no">Keep</button></div>`
+        : `<button type="button" class="btn small ghost" id="done-clear-ask" data-act="done-clear-ask">Delete all completed</button>`;
       return [
         { key: "logged", label: "Recurring check-ins logged this week", items: logged },
-        { key: "done", label: "Completed", items: done },
+        { key: "done", label: "Completed", items: done, action: clear },
       ];
     }
     if (ui.view === "recurring") {
@@ -1046,7 +1098,7 @@ kbd { font-family: var(--f-mono); font-size: 12px; padding: 0 4px; border: 1px s
   function stats(now) {
     const ws = weekStart(now);
     const s = { overdue: 0, today: 0, soon: 0, waiting: 0, done: 0 };
-    for (const t of tasks.values()) {
+    for (const t of liveTasks()) {
       if (!inProject(t)) continue;
       s.done += t.history.filter(h => h >= ws).length;
       if (t.status === "done") { if (t.completedAt >= ws) s.done++; continue; }
@@ -1070,6 +1122,13 @@ kbd { font-family: var(--f-mono); font-size: 12px; padding: 0 4px; border: 1px s
   const safeUrl = s => /^https?:\/\/\S+$/i.test(s.trim()) ? s.trim() : "";
 
   /* Rendering */
+  function thumbsHTML(t) {
+    const n = t.images.length;
+    if (!n) return "";
+    return `<div class="thumbs">${t.images.slice(0, 4).map((p, i) =>
+      `<button type="button" class="thumb" data-act="view" data-i="${i}" aria-label="View picture ${i + 1} of ${n}">${imgTag(p)}</button>`).join("")}${n > 4
+      ? `<button type="button" class="thumb more" data-act="view" data-i="4" aria-label="View all ${n} pictures">+${n - 4}</button>` : ""}</div>`;
+  }
   function rowHTML(t, now) {
     const cat = CATS[t.cat];
     const done = t.status === "done";
@@ -1087,10 +1146,6 @@ kbd { font-family: var(--f-mono); font-size: 12px; padding: 0 4px; border: 1px s
       t.owner && `<span>Owner: ${esc(t.owner)}</span>`,
       link ? `<a href="${esc(link)}" target="_blank" rel="noopener noreferrer">Evidence ↗</a>` : t.evidence && `<span>Evidence: ${esc(t.evidence)}</span>`,
     ].filter(Boolean).join("");
-    const n = t.images.length;
-    const thumbs = n ? `<div class="thumbs">${t.images.slice(0, 4).map((p, i) =>
-      `<button type="button" class="thumb" data-act="view" data-i="${i}" aria-label="View picture ${i + 1} of ${n}">${imgTag(p)}</button>`).join("")}${n > 4
-      ? `<button type="button" class="thumb more" data-act="view" data-i="4" aria-label="View all ${n} pictures">+${n - 4}</button>` : ""}</div>` : "";
     const pills = [
       t.pri === "high" && !done && `<span class="pill high">High</span>`,
       t.status === "doing" && `<span class="pill doing">In progress</span>`,
@@ -1105,9 +1160,49 @@ kbd { font-family: var(--f-mono); font-size: 12px; padding: 0 4px; border: 1px s
         <button type="button" class="title" id="t-${esc(t.id)}" data-act="edit">${esc(t.title)}</button>
         ${t.notes ? `<p class="notes" data-act="edit">${esc(t.notes)}</p>` : ""}
         <div class="meta">${meta}</div>
-        ${thumbs}
+        ${thumbsHTML(t)}
       </div>
-      <div class="side">${sideDue}${pills ? `<span class="pills">${pills}</span>` : ""}<button type="button" class="btn ghost small" data-act="edit" aria-label="${ro ? "Open" : "Edit"} “${esc(t.title)}”">${ro ? "Open" : "Edit"}</button></div>
+      <div class="side">${sideDue}${pills ? `<span class="pills">${pills}</span>` : ""}<span class="row-acts">`
+        + `<button type="button" class="btn ghost small" data-act="edit" aria-label="${ro ? "Open" : "Edit"} “${esc(t.title)}”">${ro ? "Open" : "Edit"}</button>`
+        + (ro ? "" : `<button type="button" class="btn ghost small" data-act="delete" aria-label="Delete “${esc(t.title)}”">Delete</button>`)
+        + `</span></div>
+    </li>`;
+  }
+  function binHTML() {
+    const all = binTasks(), items = all.filter(matches).sort((a, b) => b.deletedAt - a.deletedAt);
+    const s = all.length === 1 ? "" : "s";
+    const empty = ro || !all.length ? "" : ui.confirmEmpty
+      ? `<div class="acts"><span>Delete ${all.length} task${s} for good? This can't be undone.</span><button type="button" class="btn small danger" id="empty-yes" data-act="empty-yes">Delete for good</button><button type="button" class="btn small ghost" data-act="empty-no">Keep</button></div>`
+      : `<div class="acts"><button type="button" class="btn small" id="empty-ask" data-act="empty-ask">Empty bin</button></div>`;
+    const intro = `<div class="notice"><p>Deleted tasks stay here for ${BIN_DAYS} days. After that, they and their pictures are deleted for good. Restore a task to put it back on your desk.</p>${empty}</div>`;
+    if (!items.length) {
+      return intro + `<div class="empty"><h3>${all.length ? "No deleted tasks match here" : "The bin is empty"}</h3>
+        <p>${all.length ? "Try another project, or clear the search." : `Tasks you delete wait here for ${BIN_DAYS} days in case you need them back.`}</p>
+        ${all.length ? `<div class="acts"><button type="button" class="btn" data-act="clear-filters">Show all projects</button></div>` : ""}</div>`;
+    }
+    return intro + `<section class="group" data-key="bin"><div class="group-head"><h2>Deleted <span class="count">${items.length}</span></h2></div><ul class="tasklist">${items.map(binRowHTML).join("")}</ul></section>`;
+  }
+  function binRowHTML(t) {
+    const left = BIN_DAYS - Math.floor((Date.now() - t.deletedAt) / 864e5);
+    const pname = projectName(t.project), cat = CATS[t.cat], id = esc(t.id);
+    const meta = [
+      pname && `<span class="proj">${esc(pname)}</span>`,
+      `<span class="code" title="${esc(cat.name)}">${cat.code}</span>`,
+      t.status === "done" ? `<span>Completed ${esc(fmtShort(t.completedAt))}</span>` : t.due && `<span>Was due ${esc(fmtShort(t.due))}</span>`,
+    ].filter(Boolean).join("");
+    const actions = ro ? "" : ui.purging === t.id
+      ? `<span class="row-acts"><span class="confirm-text">Delete for good?</span><button type="button" class="btn small danger" id="purge-yes-${id}" data-act="purge-yes">Delete</button><button type="button" class="btn small ghost" data-act="purge-no">Keep</button></span>`
+      : `<span class="row-acts"><button type="button" class="btn small" id="restore-${id}" data-act="restore" aria-label="Restore “${esc(t.title)}”">Restore</button>`
+        + `<button type="button" class="btn small ghost" id="purge-${id}" data-act="purge-ask" aria-label="Delete “${esc(t.title)}” for good">Delete for good</button></span>`;
+    return `<li class="task binned" data-id="${id}">
+      <div class="body">
+        <span class="title-text">${esc(t.title)}</span>
+        ${t.notes ? `<p class="notes">${esc(t.notes)}</p>` : ""}
+        <div class="meta">${meta}</div>
+        ${thumbsHTML(t)}
+      </div>
+      <div class="side"><span class="due">Deleted ${esc(fmtShort(iso(new Date(t.deletedAt))))}</span>
+        <span class="purge-in"${left <= 3 ? ' data-tone="crit"' : ""}>${left <= 1 ? "Gone for good within a day" : `Gone for good in ${left} days`}</span>${actions}</div>
     </li>`;
   }
 
@@ -1115,18 +1210,18 @@ kbd { font-family: var(--f-mono); font-size: 12px; padding: 0 4px; border: 1px s
     const loading = mode === "connecting";
     return `<div class="empty">
       <h3>${loading ? "Opening your task desk…" : "Nothing on your desk yet"}</h3>
-      <p>Your GRC tasks appear here, sorted into overdue, due today and the next seven days. Add a task with its due date and notes, or pick a check-in from the routine library.</p>
+      <p>Your GRC tasks appear here, sorted into overdue, due today and the next seven days. Add a task with its due date and notes, or build a routine library for each project and add from it.</p>
       ${!loading && !ro ? `<div class="acts"><button type="button" class="btn primary" data-act="new">Add your first task</button></div>` : ""}
     </div>`;
   }
   function noneHTML() {
     const filtered = ui.project || ui.q;
     const msg = {
-      focus: ["Clear for today", "Nothing is overdue or due today. Look at the next 7 days, or pull a routine from the library."],
+      focus: ["Clear for today", "Nothing is overdue or due today. Look at the next 7 days, or add a routine from your library."],
       week: ["A quiet week ahead", "Nothing is due in the next seven days."],
       open: ["No open tasks", "Everything on your desk is done."],
       waiting: ["Nobody owes you anything", "Set a task's status to Waiting on others when it depends on someone else, and it shows up here."],
-      recurring: ["No recurring tasks", "Add a check-in from the routine library, or set Repeats when you create a task."],
+      recurring: ["No recurring tasks", "Set Repeats when you create a task, or add a repeating routine from your library."],
       done: ["Nothing completed yet", "Finished tasks and logged check-ins from this week appear here."],
     }[ui.view];
     return `<div class="empty">
@@ -1150,13 +1245,12 @@ kbd { font-family: var(--f-mono); font-size: 12px; padding: 0 4px; border: 1px s
   }
   function renderToolbar() {
     for (const b of document.querySelectorAll("#views button")) b.setAttribute("aria-pressed", String(b.dataset.view === ui.view));
-    if (ui.project && ui.project !== NO_PROJECT && !projects.has(ui.project) && mode !== "connecting") {
+    $("#bin-count").textContent = binTasks().length || "";
+    if (ui.project && ui.project !== NO_PROJECT && !projects.has(ui.project) && dataLoaded()) {
       ui.project = ""; prefs.set("project", "");
     }
     const sel = $("#filter-project");
-    sel.innerHTML = `<option value="">All projects</option>`
-      + projectList().map(p => `<option value="${esc(p.id)}">${esc(p.name)}</option>`).join("")
-      + `<option value="${NO_PROJECT}">No project</option>`;
+    sel.innerHTML = `<option value="">All projects</option>` + projectOptions() + `<option value="${NO_PROJECT}">No project</option>`;
     sel.value = ui.project;
     $("#quick").hidden = ro;
     $("#new-task").hidden = ro;
@@ -1180,23 +1274,28 @@ kbd { font-family: var(--f-mono); font-size: 12px; padding: 0 4px; border: 1px s
     if (mode === "offline") out.push(`<div class="notice warn"><p>The GRC Task Desk server isn't responding, so changes can't be saved. Start the app again, then reload this page.</p></div>`);
     if (mode === "browser" && localBlocked) out.push(`<div class="notice warn"><p>This browser is blocking storage for this file, so changes are lost when you close the tab. Open the page through a local web server instead, as described in the README.</p></div>`);
     if (ro && db) out.push(`<div class="notice"><p>You can read this task list but not change it.</p></div>`);
-    const starters = [...tasks.values()].filter(t => t.starter).length;
+    const starters = liveTasks().filter(t => t.starter).length;
     if (starters && !ro) {
       out.push(`<div class="notice"><p>${starters} starter task${starters === 1 ? " is" : "s are"} loaded as examples of a GRC week. Edit one and it becomes yours, or clear the rest.</p>
         <div class="acts">${ui.confirmClear
-          ? `<span>Delete all ${starters} starter tasks?</span><button type="button" class="btn danger small" data-act="clear-yes">Delete them</button><button type="button" class="btn ghost small" data-act="clear-no">Keep</button>`
+          ? `<span>Move all ${starters} starter tasks to the bin?</span><button type="button" class="btn danger small" data-act="clear-yes">Move to bin</button><button type="button" class="btn ghost small" data-act="clear-no">Keep</button>`
           : `<button type="button" class="btn small" data-act="clear-ask">Clear starter tasks</button>`}</div></div>`);
     }
     $("#notices").innerHTML = out.join("");
   }
-  function renderList(now) {
+  function renderList(now, focusTo) {
     const host = $("#list");
-    const focusId = document.activeElement && host.contains(document.activeElement) ? document.activeElement.id : "";
-    if (!tasks.size) { host.innerHTML = emptyHTML(); return; }
-    const groups = buildGroups([...tasks.values()].filter(matches), now).filter(g => g.items.length);
-    host.innerHTML = groups.length
-      ? groups.map(g => `<section class="group" data-key="${g.key}"><h2>${esc(g.label)} <span class="count">${g.items.length}</span></h2><ul class="tasklist">${g.items.map(t => rowHTML(t, now)).join("")}</ul></section>`).join("")
-      : noneHTML();
+    const focusId = focusTo || (document.activeElement && host.contains(document.activeElement) ? document.activeElement.id : "");
+    const live = liveTasks();
+    if (ui.view === "bin") host.innerHTML = binHTML();
+    else if (!live.length) host.innerHTML = emptyHTML();
+    else {
+      const groups = buildGroups(live.filter(matches), now).filter(g => g.items.length);
+      host.innerHTML = groups.length
+        ? groups.map(g => `<section class="group" data-key="${g.key}"><div class="group-head"><h2>${esc(g.label)} <span class="count">${g.items.length}</span></h2>${g.action || ""}</div>`
+          + `<ul class="tasklist">${g.items.map(t => rowHTML(t, now)).join("")}</ul></section>`).join("")
+        : noneHTML();
+    }
     hydratePics(host);
     if (focusId) { const el = document.getElementById(focusId); if (el) el.focus({ preventScroll: true }); }
   }
@@ -1206,7 +1305,7 @@ kbd { font-family: var(--f-mono); font-size: 12px; padding: 0 4px; border: 1px s
     const draft = draftEl ? draftEl.value : null;
     const hadFocus = draftEl && document.activeElement === draftEl;
     const open = {}, all = {}, rts = {};
-    for (const t of tasks.values()) {
+    for (const t of liveTasks()) {
       all[t.project] = (all[t.project] || 0) + 1;
       if (t.status !== "done") open[t.project] = (open[t.project] || 0) + 1;
     }
@@ -1233,13 +1332,16 @@ kbd { font-family: var(--f-mono); font-size: 12px; padding: 0 4px; border: 1px s
   const CADENCE_ORDER = ["daily", "weekly", "monthly", "quarterly", "annual", "none"];
   const libLabel = key => key ? projectName(key) : "General";
   const routineKey = (project, title) => (projects.has(project) ? project : "") + "\n" + title.trim().toLowerCase();
-  const libOptions = () => projectList().map(p => `<option value="${esc(p.id)}">${esc(p.name)}</option>`).join("") + `<option value="">General (no project)</option>`;
+  const libOptions = () => projectOptions() + `<option value="">General (no project)</option>`;
   function libKey() {
     if (ui.libProject == null) { const first = projectList()[0]; return first ? first.id : ""; }
     return projects.has(ui.libProject) ? ui.libProject : "";
   }
   function renderLibrary() {
-    if (ui.libProject && !projects.has(ui.libProject) && mode !== "connecting") { ui.libProject = null; prefs.set("libProject", null); }
+    if (ui.libProject && !projects.has(ui.libProject) && dataLoaded()) { ui.libProject = null; prefs.set("libProject", null); }
+    const host = $("#lib-list");
+    const focusId = ui.libFocus || (document.activeElement && host.contains(document.activeElement) ? document.activeElement.id : "");
+    ui.libFocus = "";
     const key = libKey();
     const sel = $("#lib-project");
     sel.innerHTML = libOptions();
@@ -1247,30 +1349,38 @@ kbd { font-family: var(--f-mono); font-size: 12px; padding: 0 4px; border: 1px s
     $("#lib-buttons").hidden = ro;
     const list = [...routines.values()].filter(r => (projects.has(r.project) ? r.project : "") === key);
     if (!list.length) {
-      $("#lib-list").innerHTML = `<div class="lib-empty"><p>The ${esc(libLabel(key))} library is empty.${ro ? ""
+      host.innerHTML = `<div class="lib-empty"><p>The ${esc(libLabel(key))} library is empty.${ro ? ""
         : " Create your own routines, copy in standard GRC check-ins, or use Save as routine on any task."}</p></div>`;
       return;
     }
-    const openKeys = new Set([...tasks.values()].filter(t => t.status !== "done").map(t => routineKey(t.project, t.title)));
-    $("#lib-list").innerHTML = CADENCE_ORDER.map(c => {
+    // A routine is on the desk when an open task was added from it. Tasks from before that link
+    // existed fall back to matching project and title.
+    const linked = new Set(), legacy = new Set();
+    for (const t of liveTasks()) {
+      if (t.status === "done") continue;
+      if (t.routine) linked.add(t.routine); else legacy.add(routineKey(t.project, t.title));
+    }
+    const onDesk = r => r.recur !== "none" && (linked.has(r.id) || legacy.has(routineKey(r.project, r.title)));
+    host.innerHTML = CADENCE_ORDER.map(c => {
       const items = list.filter(r => r.recur === c).sort((a, b) => a.title.localeCompare(b.title));
       if (!items.length) return "";
-      return `<div class="lib-group"><h3>${RECUR[c]} <span class="count">${items.length}</span></h3><ul class="lib">${items.map(r => routineRow(r, openKeys)).join("")}</ul></div>`;
+      return `<div class="lib-group"><h3>${RECUR[c]} <span class="count">${items.length}</span></h3><ul class="lib">${items.map(r => routineRow(r, onDesk(r))).join("")}</ul></div>`;
     }).join("");
+    if (focusId) { const el = document.getElementById(focusId); if (el) el.focus({ preventScroll: true }); }
   }
-  function routineRow(r, openKeys) {
+  function routineRow(r, onDesk) {
+    const id = esc(r.id);
     if (ui.rtRemoving === r.id && !ro) {
       return `<li class="lib-row"><p class="confirm">Delete the routine “${esc(r.title)}”? Tasks already on your desk stay.</p>
-        <div class="lib-actions"><button type="button" class="btn small danger" data-ract="delete-yes" data-id="${esc(r.id)}">Delete</button><button type="button" class="btn small ghost" data-ract="delete-no">Keep</button></div></li>`;
+        <div class="lib-actions"><button type="button" class="btn small danger" id="rt-del-yes-${id}" data-ract="delete-yes" data-id="${id}">Delete</button><button type="button" class="btn small ghost" data-ract="delete-no" data-id="${id}">Keep</button></div></li>`;
     }
     const ref = [r.fw, r.ctrl].filter(Boolean).join(" · ");
-    const inList = r.recur !== "none" && openKeys.has(routineKey(r.project, r.title));
-    const actions = ro ? "" : `<div class="lib-actions">${inList
+    const actions = ro ? "" : `<div class="lib-actions">${onDesk
       ? `<span class="in-list">On your desk</span>`
-      : `<button type="button" class="btn small" data-ract="add" data-id="${esc(r.id)}" aria-label="Add “${esc(r.title)}” to your desk">Add to desk</button>`}`
-      + `<button type="button" class="btn small ghost" data-ract="edit" data-id="${esc(r.id)}" aria-label="Edit the routine “${esc(r.title)}”">Edit</button>`
-      + `<button type="button" class="btn small ghost" data-ract="delete" data-id="${esc(r.id)}" aria-label="Delete the routine “${esc(r.title)}”">Delete</button></div>`;
-    return `<li class="lib-row"><div><p class="lib-title">${esc(r.title)}</p><p class="lib-ref"><span class="code" title="${esc(CATS[r.cat].name)}">${CATS[r.cat].code}</span>${esc(ref || "No control reference")} · ${RECUR[r.recur]}</p></div>${actions}</li>`;
+      : `<button type="button" class="btn small" id="rt-add-${id}" data-ract="add" data-id="${id}" aria-label="Add “${esc(r.title)}” to your desk">Add to desk</button>`}`
+      + `<button type="button" class="btn small ghost" id="rt-edit-${id}" data-ract="edit" data-id="${id}" aria-label="Edit the routine “${esc(r.title)}”">Edit</button>`
+      + `<button type="button" class="btn small ghost" id="rt-del-${id}" data-ract="delete" data-id="${id}" aria-label="Delete the routine “${esc(r.title)}”">Delete</button></div>`;
+    return `<li class="lib-row"><div><p class="lib-title">${esc(r.title)}</p><p class="lib-ref"><span class="code" title="${esc(CATS[r.cat].name)}">${CATS[r.cat].code}</span>${esc(ref || "No control reference")}</p></div>${actions}</li>`;
   }
   function render() {
     const now = today();
@@ -1288,7 +1398,7 @@ kbd { font-family: var(--f-mono); font-size: 12px; padding: 0 4px; border: 1px s
   /* Actions */
   function toggleDone(id) {
     const t = tasks.get(id);
-    if (!t || ro) return;
+    if (!t || ro || t.deletedAt) return;
     const prev = clean(t), now = today();
     let next, msg;
     if (t.recur !== "none" && t.status !== "done") {
@@ -1306,9 +1416,25 @@ kbd { font-family: var(--f-mono); font-size: 12px; padding: 0 4px; border: 1px s
     toast(msg, () => save(id, prev));
   }
 
+  /* Dialogs */
+  const openDialog = dlg => { try { dlg.showModal(); } catch (e) { dlg.setAttribute("open", ""); } };
+  function closeDialog(dlg) {
+    if (typeof dlg.close === "function" && dlg.open) dlg.close();
+    else if (dlg.hasAttribute("open")) { dlg.removeAttribute("open"); dlg.dispatchEvent(new Event("close")); }
+  }
+  /* Close on a click on the backdrop or on a [data-close] button. A text selection that starts
+     inside and ends outside also clicks the dialog itself, so the press must start outside too. */
+  function closeOnBackdrop(dlg) {
+    let pressedOutside = false;
+    dlg.addEventListener("pointerdown", e => { pressedOutside = e.target === dlg; });
+    dlg.addEventListener("click", e => {
+      if ((e.target === dlg && pressedOutside) || e.target.closest("[data-close]")) closeDialog(dlg);
+    });
+  }
+
   /* Editor */
   const editor = $("#editor");
-  const ed = { id: null, pics: [], added: new Set(), removed: new Set(), uploading: 0, saved: false, open: false, session: 0 };
+  const ed = { id: null, pics: [], added: new Set(), removed: new Set(), uploading: 0, saved: false, open: false, session: 0, routine: "" };
   function fillSelect(sel, map) { sel.innerHTML = Object.entries(map).map(([k, v]) => `<option value="${k}">${esc(typeof v === "string" ? v : v.code + " · " + v.name)}</option>`).join(""); }
   fillSelect($("#f-cat"), CATS);
   fillSelect($("#f-pri"), PRI);
@@ -1324,14 +1450,17 @@ kbd { font-family: var(--f-mono); font-size: 12px; padding: 0 4px; border: 1px s
   }
   function openEditor(id, preset) {
     const cur = id ? tasks.get(id) : null;
-    if (id && !cur) return;
+    if (id && (!cur || cur.deletedAt)) return;
     if (!cur && ro) return;
     const t = cur || normTask("", { ...clean(blank()), ...preset });
     const title = cur ? t.title : String((preset && preset.title) || "");
-    Object.assign(ed, { id: cur ? id : null, pics: [...t.images], added: new Set(), removed: new Set(), uploading: 0, saved: false, open: true, session: ed.session + 1 });
+    Object.assign(ed, {
+      id: cur ? id : null, pics: [...t.images], added: new Set(), removed: new Set(), uploading: 0,
+      saved: false, open: true, session: ed.session + 1, routine: t.routine,
+    });
     $("#ed-title").textContent = cur ? (ro ? "Task details" : "Edit task") : "New task";
     $("#f-title").value = title;
-    $("#f-project").innerHTML = `<option value="">No project</option>` + projectList().map(p => `<option value="${esc(p.id)}">${esc(p.name)}</option>`).join("");
+    $("#f-project").innerHTML = `<option value="">No project</option>` + projectOptions();
     $("#f-project").value = projects.has(t.project) ? t.project : "";
     $("#proj-hint").hidden = projects.size > 0 || ro;
     $("#f-due").value = t.due;
@@ -1352,15 +1481,11 @@ kbd { font-family: var(--f-mono); font-size: 12px; padding: 0 4px; border: 1px s
     $("#ed-save").hidden = ro;
     $("#ed-delete").hidden = !cur || ro;
     $("#ed-routine").hidden = ro;
-    $("#ed-confirm").hidden = true;
     renderEdPics();
-    try { editor.showModal(); } catch (e) { editor.setAttribute("open", ""); }
+    openDialog(editor);
     if (!ro) (title && !t.due ? $("#f-due") : $("#f-title")).focus();
   }
-  function closeEditor() {
-    if (typeof editor.close === "function" && editor.open) editor.close();
-    else { editor.removeAttribute("open"); onEditorClosed(); }
-  }
+  const closeEditor = () => closeDialog(editor);
   function onEditorClosed() {
     if (!ed.open) return;
     ed.open = false;
@@ -1432,6 +1557,7 @@ kbd { font-family: var(--f-mono); font-size: 12px; padding: 0 4px; border: 1px s
       evidence: $("#f-evidence").value.trim(),
       completedAt: status === "done" ? (base.status === "done" && base.completedAt ? base.completedAt : today()) : "",
       starter: false,
+      routine: ed.routine,
     };
     save(cur ? ed.id : newId("tasks"), body);
     ed.removed.forEach(p => pics.del(p));
@@ -1441,8 +1567,8 @@ kbd { font-family: var(--f-mono); font-size: 12px; padding: 0 4px; border: 1px s
   });
   $("#f-title").addEventListener("input", () => { if ($("#f-title").value.trim()) showErrors(true, $("#err-due").hidden); });
   $("#f-due").addEventListener("input", () => { if ($("#f-due").value) showErrors($("#err-title").hidden, true); });
+  closeOnBackdrop(editor);
   editor.addEventListener("click", e => {
-    if (e.target === editor || e.target.closest("[data-close]")) { closeEditor(); return; }
     const v = e.target.closest("[data-ed-view]");
     if (v) { openViewer(ed.pics, Number(v.dataset.edView), $("#f-title").value.trim() || "New task"); return; }
     const r = e.target.closest("[data-ed-remove]");
@@ -1454,11 +1580,11 @@ kbd { font-family: var(--f-mono); font-size: 12px; padding: 0 4px; border: 1px s
   zone.addEventListener("dragover", e => { e.preventDefault(); zone.classList.add("over"); });
   zone.addEventListener("dragleave", () => zone.classList.remove("over"));
   zone.addEventListener("drop", e => { e.preventDefault(); zone.classList.remove("over"); addPictures(imageFiles(e.dataTransfer)); });
-  $("#ed-delete").addEventListener("click", () => { $("#ed-confirm").hidden = false; $("#ed-delete").hidden = true; $("#ed-del-yes").focus(); });
-  $("#ed-del-no").addEventListener("click", () => { $("#ed-confirm").hidden = true; $("#ed-delete").hidden = false; });
-  $("#ed-del-yes").addEventListener("click", () => {
-    if (ed.id && tasks.has(ed.id)) { removeTask(ed.id); toast("Task deleted."); }
+  // Deleting moves the task to the bin, so it needs no confirmation: the toast offers Undo.
+  $("#ed-delete").addEventListener("click", () => {
+    const list = ed.id ? moveToBin([ed.id]) : [];
     closeEditor();
+    binToast(list);
   });
 
   /* Paste a picture into the open task, or anywhere on the desk to start a new task with it. */
@@ -1471,7 +1597,7 @@ kbd { font-family: var(--f-mono); font-size: 12px; padding: 0 4px; border: 1px s
   }
   const isTextField = el => !!el && (el.tagName === "TEXTAREA" || (el.tagName === "INPUT" && ["text", "search", "url", ""].includes(el.type)));
   document.addEventListener("paste", e => {
-    if (ro || !pics.canAdd || viewerDlg.open) return;
+    if (ro || !pics.canAdd || viewerDlg.open || rtEditor.open || stdDlg.open) return;
     const files = imageFiles(e.clipboardData);
     if (!files.length) return;
     if (isTextField(e.target) && Array.from(e.clipboardData.types || []).includes("text/plain")) return;
@@ -1487,7 +1613,7 @@ kbd { font-family: var(--f-mono); font-size: 12px; padding: 0 4px; border: 1px s
     if (!list.length) return;
     Object.assign(view, { list, i: Math.min(Math.max(i, 0), list.length - 1), title });
     showPic();
-    try { viewerDlg.showModal(); } catch (e) { viewerDlg.setAttribute("open", ""); }
+    openDialog(viewerDlg);
   }
   function showPic() {
     const id = view.list[view.i], img = $("#viewer-img");
@@ -1502,8 +1628,7 @@ kbd { font-family: var(--f-mono); font-size: 12px; padding: 0 4px; border: 1px s
     $("#viewer-nav").hidden = view.list.length < 2;
   }
   const stepPic = d => { view.i = (view.i + d + view.list.length) % view.list.length; showPic(); };
-  function closeViewer() { if (typeof viewerDlg.close === "function" && viewerDlg.open) viewerDlg.close(); else viewerDlg.removeAttribute("open"); }
-  viewerDlg.addEventListener("click", e => { if (e.target === viewerDlg || e.target.closest("[data-vclose]")) closeViewer(); });
+  closeOnBackdrop(viewerDlg);
   viewerDlg.addEventListener("keydown", e => {
     if (view.list.length < 2) return;
     if (e.key === "ArrowLeft") stepPic(-1);
@@ -1515,6 +1640,10 @@ kbd { font-family: var(--f-mono); font-size: 12px; padding: 0 4px; border: 1px s
   /* Toast */
   let toastTimer = 0;
   function toast(msg, undo) {
+    // An open modal dialog sits in the top layer, above the page. Show the toast inside it so it
+    // isn't hidden behind the dialog, and screen readers still announce it.
+    const el = $("#toast"), host = [...document.querySelectorAll("dialog[open]")].pop() || document.body;
+    if (el.parentNode !== host) host.appendChild(el);
     $("#toast-msg").textContent = msg;
     const btn = $("#toast-undo");
     btn.hidden = !undo;
@@ -1526,15 +1655,18 @@ kbd { font-family: var(--f-mono); font-size: 12px; padding: 0 4px; border: 1px s
   function hideToast() { $("#toast").hidden = true; }
 
   /* Wiring */
+  function showView(view) {
+    Object.assign(ui, { view, confirmDoneClear: false, confirmEmpty: false, purging: "" });
+    prefs.set("view", view);
+    render();
+  }
   $("#views").addEventListener("click", e => {
     const b = e.target.closest("button[data-view]");
-    if (!b) return;
-    ui.view = b.dataset.view; prefs.set("view", ui.view); render();
+    if (b) showView(b.dataset.view);
   });
   $(".tiles").addEventListener("click", e => {
     const b = e.target.closest("[data-go]");
-    if (!b) return;
-    ui.view = b.dataset.go; prefs.set("view", ui.view); render();
+    if (b) showView(b.dataset.go);
   });
   $("#filter-project").addEventListener("change", e => {
     ui.project = e.target.value;
@@ -1560,12 +1692,34 @@ kbd { font-family: var(--f-mono); font-size: 12px; padding: 0 4px; border: 1px s
     const b = e.target.closest("[data-act]");
     if (!b) return;
     const act = b.dataset.act, row = b.closest(".task"), t = row && tasks.get(row.dataset.id);
+    const now = today();
     if (act === "edit" && t) openEditor(t.id);
     else if (act === "view" && t) openViewer(t.images, Number(b.dataset.i), t.title);
+    else if (act === "delete" && t) binToast(moveToBin([t.id]));
     else if (act === "new") openEditor(null);
     else if (act === "clear-filters") {
       ui.project = ""; ui.q = ""; $("#q").value = "";
       prefs.set("project", ""); render();
+    }
+    // Done view: move every completed task shown to the bin.
+    else if (act === "done-clear-ask") { ui.confirmDoneClear = true; renderList(now, "done-clear-yes"); }
+    else if (act === "done-clear-no") { ui.confirmDoneClear = false; renderList(now, "done-clear-ask"); }
+    else if (act === "done-clear-yes") {
+      ui.confirmDoneClear = false;
+      binToast(moveToBin(liveTasks().filter(x => x.status === "done" && matches(x)).map(x => x.id)));
+    }
+    // Bin
+    else if (act === "restore" && t) { restoreTasks([t]); toast(`Restored “${t.title}” to your desk.`); }
+    else if (act === "purge-ask" && t) { ui.purging = t.id; renderList(now, "purge-yes-" + t.id); }
+    else if (act === "purge-no" && t) { ui.purging = ""; renderList(now, "purge-" + t.id); }
+    else if (act === "purge-yes" && t) { ui.purging = ""; deleteForGood([t.id]); toast(`Deleted “${t.title}” for good.`); }
+    else if (act === "empty-ask") { ui.confirmEmpty = true; renderList(now, "empty-yes"); }
+    else if (act === "empty-no") { ui.confirmEmpty = false; renderList(now, "empty-ask"); }
+    else if (act === "empty-yes") {
+      const ids = binTasks().map(x => x.id);
+      ui.confirmEmpty = false;
+      deleteForGood(ids);
+      toast(`Emptied the bin: ${ids.length} task${ids.length === 1 ? "" : "s"} deleted for good.`);
     }
   });
   $("#notices").addEventListener("click", e => {
@@ -1575,15 +1729,16 @@ kbd { font-family: var(--f-mono); font-size: 12px; padding: 0 4px; border: 1px s
     else if (b.dataset.act === "clear-no") { ui.confirmClear = false; renderNotices(); }
     else if (b.dataset.act === "clear-yes") {
       ui.confirmClear = false;
-      const ids = [...tasks.values()].filter(t => t.starter).map(t => t.id);
-      ids.forEach(removeTask);
-      toast(`Cleared ${ids.length} starter task${ids.length === 1 ? "" : "s"}.`);
+      binToast(moveToBin(liveTasks().filter(t => t.starter).map(t => t.id)));
     }
   });
   /* Routine library actions */
-  const closeDialog = dlg => { if (typeof dlg.close === "function" && dlg.open) dlg.close(); else dlg.removeAttribute("open"); };
-  const openDialog = dlg => { try { dlg.showModal(); } catch (e) { dlg.setAttribute("open", ""); } };
-  function showLibrary(key) { ui.libProject = key; ui.rtRemoving = ""; prefs.set("libProject", key); renderLibrary(); }
+  const ROUTINE_FIELDS = ["title", "notes", "cat", "fw", "ctrl", "pri", "recur", "owner", "evidence"];
+  const pick = (src, keys) => Object.fromEntries(keys.map(k => [k, src[k]]));
+  // The task form (f-*) and the routine form (r-*) name these fields the same way.
+  const readRoutineFields = prefix => Object.fromEntries(ROUTINE_FIELDS.map(k => [k, $(`#${prefix}-${k}`).value.trim()]));
+  function pickLibrary(key) { ui.libProject = key; ui.rtRemoving = ""; prefs.set("libProject", key); }
+  function showLibrary(key) { pickLibrary(key); renderLibrary(); }
   function routineTaken(project, title, exceptId) {
     const k = routineKey(project, title);
     return [...routines.values()].some(r => r.id !== exceptId && routineKey(r.project, r.title) === k);
@@ -1595,15 +1750,15 @@ kbd { font-family: var(--f-mono); font-size: 12px; padding: 0 4px; border: 1px s
     const b = e.target.closest("[data-ract]");
     if (!b || ro) return;
     const act = b.dataset.ract, r = routines.get(b.dataset.id);
-    if (act === "delete-no") { ui.rtRemoving = ""; renderLibrary(); return; }
     if (!r) return;
     if (act === "add") {
-      openEditor(null, {
-        title: r.title, notes: r.notes, cat: r.cat, fw: r.fw, ctrl: r.ctrl, pri: r.pri, recur: r.recur,
-        owner: r.owner, evidence: r.evidence, project: projects.has(r.project) ? r.project : "",
-      });
+      const preset = { ...pick(r, ROUTINE_FIELDS), routine: r.id };
+      // A General routine keeps the desk's project filter as the task's project.
+      if (projects.has(r.project)) preset.project = r.project;
+      openEditor(null, preset);
     } else if (act === "edit") openRoutineEditor(r.id);
-    else if (act === "delete") { ui.rtRemoving = r.id; renderLibrary(); }
+    else if (act === "delete") { ui.rtRemoving = r.id; ui.libFocus = "rt-del-yes-" + r.id; renderLibrary(); }
+    else if (act === "delete-no") { ui.rtRemoving = ""; ui.libFocus = "rt-del-" + r.id; renderLibrary(); }
     else if (act === "delete-yes") { ui.rtRemoving = ""; drop("routines", r.id); toast(`Deleted the routine “${r.title}”.`); }
   });
 
@@ -1634,30 +1789,20 @@ kbd { font-family: var(--f-mono); font-size: 12px; padding: 0 4px; border: 1px s
     openDialog(rtEditor);
     $("#r-title").focus();
   }
-  rtEditor.addEventListener("click", e => { if (e.target === rtEditor || e.target.closest("[data-close]")) closeDialog(rtEditor); });
+  closeOnBackdrop(rtEditor);
   $("#rt-form").addEventListener("submit", e => {
     e.preventDefault();
     if (ro) return;
-    const title = $("#r-title").value.trim(), project = $("#r-project").value;
-    $("#err-rtitle").hidden = !!title;
-    $("#r-title").setAttribute("aria-invalid", String(!title));
-    if (!title) { $("#r-title").focus(); return; }
-    if (routineTaken(project, title, rtEditingId)) { toast(`“${title}” is already in the ${libLabel(project)} library.`); return; }
+    const fields = readRoutineFields("r"), project = $("#r-project").value;
+    $("#err-rtitle").hidden = !!fields.title;
+    $("#r-title").setAttribute("aria-invalid", String(!fields.title));
+    if (!fields.title) { $("#r-title").focus(); return; }
     const cur = rtEditingId && routines.get(rtEditingId);
-    put("routines", cur ? rtEditingId : newId("routines"), {
-      ...(cur ? clean(cur) : { created: Date.now() }),
-      title,
-      project,
-      recur: $("#r-recur").value,
-      cat: $("#r-cat").value,
-      pri: $("#r-pri").value,
-      fw: $("#r-fw").value.trim(),
-      ctrl: $("#r-ctrl").value.trim(),
-      owner: $("#r-owner").value.trim(),
-      evidence: $("#r-evidence").value.trim(),
-      notes: $("#r-notes").value.trim(),
-    });
-    showLibrary(project);
+    // Only a new title or library can clash; an unchanged routine always saves.
+    const moved = !cur || routineKey(cur.project, cur.title) !== routineKey(project, fields.title);
+    if (moved && routineTaken(project, fields.title, rtEditingId)) { toast(`“${fields.title}” is already in the ${libLabel(project)} library.`); return; }
+    pickLibrary(project);
+    put("routines", cur ? rtEditingId : newId("routines"), { ...(cur ? clean(cur) : { created: Date.now() }), ...fields, project });
     closeDialog(rtEditor);
     toast(cur ? "Routine saved." : `Added to the ${libLabel(project)} library.`);
   });
@@ -1688,7 +1833,7 @@ kbd { font-family: var(--f-mono); font-size: 12px; padding: 0 4px; border: 1px s
     $("#std-all").textContent = boxes.length && boxes.every(b => b.checked) ? "Clear selection" : "Select all";
   }
   stdDlg.addEventListener("change", updateStdCount);
-  stdDlg.addEventListener("click", e => { if (e.target === stdDlg || e.target.closest("[data-close]")) closeDialog(stdDlg); });
+  closeOnBackdrop(stdDlg);
   $("#std-all").addEventListener("click", () => {
     const boxes = stdBoxes(), on = !boxes.every(b => b.checked);
     boxes.forEach(b => { b.checked = on; });
@@ -1698,11 +1843,8 @@ kbd { font-family: var(--f-mono); font-size: 12px; padding: 0 4px; border: 1px s
     e.preventDefault();
     if (ro) return;
     const picked = stdBoxes().filter(b => b.checked).map(b => STANDARD[Number(b.value)]).filter(Boolean);
-    picked.forEach((x, n) => put("routines", newId("routines"), {
-      title: x.title, notes: x.notes, cat: x.cat, fw: x.fw, ctrl: x.ctrl, pri: x.pri, recur: x.recur,
-      owner: "", evidence: "", project: stdKey, created: Date.now() + n,
-    }));
-    showLibrary(stdKey);
+    pickLibrary(stdKey);
+    putMany("routines", picked.map((x, n) => [newId("routines"), clean(normRoutine("", { ...x, project: stdKey, created: Date.now() + n }))]));
     closeDialog(stdDlg);
     if (picked.length) toast(`Copied ${picked.length} check-in${picked.length === 1 ? "" : "s"} into the ${libLabel(stdKey)} library.`);
   });
@@ -1714,20 +1856,10 @@ kbd { font-family: var(--f-mono); font-size: 12px; padding: 0 4px; border: 1px s
     if (!title) { showErrors(false, $("#err-due").hidden); $("#f-title").focus(); return; }
     const project = projects.has($("#f-project").value) ? $("#f-project").value : "";
     if (routineTaken(project, title)) { toast(`“${title}” is already in the ${libLabel(project)} library.`); return; }
-    put("routines", newId("routines"), {
-      title,
-      project,
-      recur: $("#f-recur").value,
-      cat: $("#f-cat").value,
-      pri: $("#f-pri").value,
-      fw: $("#f-fw").value.trim(),
-      ctrl: $("#f-ctrl").value.trim(),
-      owner: $("#f-owner").value.trim(),
-      evidence: $("#f-evidence").value.trim(),
-      notes: $("#f-notes").value.trim(),
-      created: Date.now(),
-    });
-    showLibrary(project);
+    const id = newId("routines");
+    pickLibrary(project);
+    put("routines", id, { ...readRoutineFields("f"), project, created: Date.now() });
+    ed.routine = id; // saving this task now links it to the new routine
     toast(`Saved as a routine in the ${libLabel(project)} library.`);
   });
 
@@ -1766,7 +1898,9 @@ kbd { font-family: var(--f-mono); font-size: 12px; padding: 0 4px; border: 1px s
       const p = projects.get(id);
       ui.removing = "";
       if (ui.project === id) { ui.project = ""; prefs.set("project", ""); }
-      if (ui.libProject === id) { ui.libProject = null; prefs.set("libProject", null); }
+      // Its routines move to General, and so does the library panel if it was showing them.
+      if (libKey() === id) pickLibrary("");
+      putMany("routines", [...routines.values()].filter(r => r.project === id).map(r => [r.id, { ...clean(r), project: "" }]));
       drop("projects", id);
       if (p) toast(`Removed the project “${p.name}”.`);
     }
@@ -1778,7 +1912,7 @@ kbd { font-family: var(--f-mono); font-size: 12px; padding: 0 4px; border: 1px s
   });
 
   /* Roll the desk over at midnight without a reload. */
-  const rollover = () => { if (today() !== lastDay) render(); };
+  const rollover = () => { if (today() !== lastDay) { render(); purgeExpired(); } };
   setInterval(rollover, 60000);
   document.addEventListener("visibilitychange", rollover);
   /* Keep two tabs of a local copy in step. */

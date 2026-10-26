@@ -33,12 +33,13 @@ With `--host 0.0.0.0`, colleagues can open the address the app prints, such as `
 
 | What | Where |
 | --- | --- |
-| Tasks and projects | `data/grc-task-desk.db` (a SQLite database) |
+| Tasks (including the bin), projects and routines | `data/grc-task-desk.db` (a SQLite database) |
 | Pictures | `data/pictures/` |
 
 - **Back up**: in the app, open **Configuration → Download backup**. Or stop the app and copy the `data` folder.
 - **Restore**: stop the app, unzip the backup into the `data` folder (replacing what's there), then start the app.
-- **Update the app**: replace `server.py`, `static/` and the start files with the new versions. Keep your `data` folder.
+- **Update the app**: stop the app first (close its window), replace `server.py`, `static/` and the start files with the new versions, then start it again. Keep your `data` folder. A new page served by the old server can't save new kinds of data.
+- **Deleted tasks** go to the bin and stay there for 30 days. After that, the app deletes them and their pictures for good the next time you open it.
 
 Pictures you add to a task but never save are cleaned up automatically the next time the app starts, once they're a day old.
 
