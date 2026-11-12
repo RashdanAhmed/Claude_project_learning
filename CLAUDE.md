@@ -31,7 +31,7 @@ python3 -c "import re;open('/tmp/page.js','w').write(re.search(r'<script>(.*)</s
 
 - Never edit `grc-task-desk-standalone.html` or `app/static/index.html` by hand; edit the source and run `python3 build.py`. The built copies are committed.
 - Keep exactly one `<style>` block ahead of the markup, or the head/body split breaks.
-- After changing the source, republish it to the claude.ai artifact (same file path, same URL). Its declared capabilities are `db`, `user` and `assets`; omit `capabilities` on a republish to keep them.
+- After changing the source, republish it to the claude.ai artifact (same file path, same URL). Its declared capabilities are `db`, `user`, `assets` and `downloads`; omit `capabilities` on a republish to keep them.
 
 ## Page architecture (`grc-task-desk.html`)
 
@@ -45,6 +45,8 @@ Everything is one IIFE of vanilla JS with no framework or build step.
 - **Routines**: a task added from a routine stores the routine's id in `task.routine`, which drives "On your desk"; older tasks fall back to matching project and title (`routineKey`). Routines whose project no longer exists count as General. Removing a project rewrites its routines to `project: ""`.
 - **Pictures**: tasks store picture ids only. `pics` uploads and deletes through the server API, claude.ai `assets`, or IndexedDB depending on `env`. The task editor deletes pictures added and then cancelled (`ed.added`); the server also sweeps unreferenced pictures older than a day when it starts.
 - **Dialogs**: use `openDialog`/`closeDialog`/`closeOnBackdrop`. `toast()` moves itself into the topmost open `<dialog>` so it isn't hidden behind the modal.
+- **Files out and in**: `saveFile()` downloads through the claude.ai `downloads` capability on that host (only `.csv`/`.json` and a few other extensions are allowed there) and a blob link elsewhere. `tasksCSV()` guards cells that would run as spreadsheet formulas. `importFile()` accepts only a JSON export with `app: "grc-task-desk"`, normalizes every record, strips picture ids, and writes with `putMany` so same-id records are overwritten.
+- **Dates**: `quickDate(key, now)` is the one source for the quick picks in the task form and the row's Move to menu. `waitingSince` is set when status becomes `waiting` and cleared otherwise; the Waiting view sorts by it.
 
 ## App server (`app/server.py`)
 

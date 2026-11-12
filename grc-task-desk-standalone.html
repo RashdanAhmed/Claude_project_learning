@@ -160,7 +160,7 @@ aside { display: grid; gap: 16px; min-width: 0; }
 .views button:hover { color: var(--ink); }
 .views button[aria-pressed="true"] { background: var(--surface); color: var(--ink); box-shadow: var(--shadow-sm); }
 .views .n { font-family: var(--f-mono); font-size: 12px; color: var(--muted); }
-.filters { display: flex; gap: 8px; }
+.filters { display: flex; flex-wrap: wrap; gap: 8px; }
 .filters select { max-width: 260px; }
 
 .quick { display: flex; gap: 8px; }
@@ -266,6 +266,19 @@ img.missing { visibility: hidden; }
 .lib-tools { display: grid; gap: 8px; }
 .lib-tools select { width: 100%; }
 .lib-buttons { display: flex; flex-wrap: wrap; gap: 6px; }
+.chips { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 2px; }
+.chip {
+  min-height: 24px; padding: 2px 9px; border: 1px solid var(--line); border-radius: 999px;
+  font: 500 12px/1 var(--f-body); color: var(--muted); background: transparent; cursor: pointer;
+}
+.chip:hover { color: var(--ink); border-color: var(--accent); }
+.move {
+  width: auto; min-height: 28px; padding: 4px 22px 4px 8px; border: 1px solid transparent; border-radius: 8px;
+  font: 500 13px/1 var(--f-body); color: var(--muted); background: transparent; cursor: pointer;
+}
+.move:hover { color: var(--ink); background: var(--sunken); }
+.note-body { padding: 12px 20px; }
+.note-body textarea { min-height: 260px; font-family: var(--f-mono); font-size: 12.5px; line-height: 1.45; }
 .lib-group { margin-top: 14px; }
 .panel .lib-group h3 { margin: 0 0 4px; display: flex; align-items: baseline; gap: 6px; }
 .lib-group h3 .count { font-family: var(--f-mono); font-weight: 400; letter-spacing: 0; }
@@ -394,8 +407,8 @@ kbd { font-family: var(--f-mono); font-size: 12px; padding: 0 4px; border: 1px s
     <div class="top-actions">
       <span class="sync" id="sync" data-state="connecting">Connecting…</span>
       <label class="sr" for="q">Search tasks</label>
-      <input type="search" id="q" placeholder="Search tasks, notes, projects" autocomplete="off">
-      <button type="button" class="btn primary" id="new-task">New task</button>
+      <input type="search" id="q" placeholder="Search tasks, notes, projects" autocomplete="off" title="Press / to search">
+      <button type="button" class="btn primary" id="new-task" title="Press n for a new task">New task</button>
     </div>
   </header>
 
@@ -422,6 +435,7 @@ kbd { font-family: var(--f-mono); font-size: 12px; padding: 0 4px; border: 1px s
         <div class="filters">
           <label class="sr" for="filter-project">Filter by project</label>
           <select id="filter-project"></select>
+          <button type="button" class="btn" id="note-open" title="A plain-text summary of this week to paste into a message">Status note</button>
         </div>
       </div>
 
@@ -446,9 +460,17 @@ kbd { font-family: var(--f-mono); font-size: 12px; padding: 0 4px; border: 1px s
           <input type="text" id="project-name" placeholder="e.g. ISO 27001 certification" maxlength="80">
           <button type="submit" class="btn">Add</button>
         </form>
+        <h3>Data</h3>
+        <p class="sub">Open your tasks in a spreadsheet, or move everything between the app, the claude.ai page and the single file. Pictures stay where they are.</p>
+        <div class="lib-buttons">
+          <button type="button" class="btn small" id="exp-csv">Export tasks (CSV)</button>
+          <button type="button" class="btn small" id="exp-json">Export everything</button>
+          <button type="button" class="btn small" id="imp-json">Import</button>
+          <input type="file" id="imp-file" class="sr" accept=".json,application/json" tabindex="-1" aria-hidden="true">
+        </div>
         <div id="backup" hidden>
           <h3>Backup</h3>
-          <p class="sub">Download your tasks, projects and pictures as one zip file. To restore it, stop the app and unzip it into the app's data folder.</p>
+          <p class="sub">Download your tasks, projects, routines and pictures as one zip file. To restore it, stop the app and unzip it into the app's data folder.</p>
           <a class="btn small" id="backup-link" href="#" download>Download backup</a>
         </div>
       </section>
@@ -497,6 +519,14 @@ kbd { font-family: var(--f-mono); font-size: 12px; padding: 0 4px; border: 1px s
           <label for="f-due"><span class="field-label">Due date <em>*</em></span></label>
           <input type="date" id="f-due" required>
           <p class="field-error" id="err-due" hidden>Pick a due date.</p>
+          <div class="chips" id="due-chips" aria-label="Quick due dates">
+            <button type="button" class="chip" data-due="today">Today</button>
+            <button type="button" class="chip" data-due="tomorrow">Tomorrow</button>
+            <button type="button" class="chip" data-due="monday">Next Mon</button>
+            <button type="button" class="chip" data-due="week">In a week</button>
+            <button type="button" class="chip" data-due="month">Month end</button>
+            <button type="button" class="chip" data-due="quarter">Quarter end</button>
+          </div>
         </div>
         <label class="field span2"><span>Notes</span><textarea id="f-notes" rows="5" maxlength="8000" placeholder="Context, decisions, who you spoke to, what's next"></textarea></label>
         <div class="field span2" id="pics-field">
@@ -600,6 +630,27 @@ kbd { font-family: var(--f-mono); font-size: 12px; padding: 0 4px; border: 1px s
   </div>
 </dialog>
 
+<dialog id="note-dlg" aria-labelledby="note-heading">
+  <div class="ed-head">
+    <div>
+      <h2 id="note-heading">Status note</h2>
+      <p class="hint" id="note-sub"></p>
+    </div>
+    <button type="button" class="icon-btn" data-close aria-label="Close">×</button>
+  </div>
+  <div class="note-body">
+    <label class="sr" for="note-text">Status note text</label>
+    <textarea id="note-text" rows="18" readonly spellcheck="false"></textarea>
+  </div>
+  <div class="ed-foot">
+    <span class="hint">Paste it into an email or chat message.</span>
+    <div class="acts">
+      <button type="button" class="btn ghost" data-close>Close</button>
+      <button type="button" class="btn primary" id="note-copy">Copy</button>
+    </div>
+  </div>
+</dialog>
+
 <div class="toast" id="toast" role="status" aria-live="polite" hidden><span id="toast-msg"></span><button type="button" id="toast-undo">Undo</button></div>
 
 <script>
@@ -695,6 +746,25 @@ kbd { font-family: var(--f-mono); font-size: 12px; padding: 0 4px; border: 1px s
     return 1 + Math.round(((d - jan4) / 864e5 - 3 + ((jan4.getDay() + 6) % 7)) / 7);
   }
   const quarterEnd = s => { const d = parse(s); return iso(new Date(d.getFullYear(), Math.floor(d.getMonth() / 3) * 3 + 3, 0)); };
+  /* The quick due dates offered in the task form and the Move to menu. */
+  function quickDate(key, now) {
+    const d = parse(now);
+    switch (key) {
+      case "today": return now;
+      case "tomorrow": return addDays(now, 1);
+      case "monday": return addDays(now, ((8 - d.getDay()) % 7) || 7);
+      case "week": return addDays(now, 7);
+      case "month": return iso(new Date(d.getFullYear(), d.getMonth() + 1, 0));
+      case "quarter": return quarterEnd(now);
+    }
+    return "";
+  }
+  const QUICK = [["today", "Today"], ["tomorrow", "Tomorrow"], ["monday", "Next Monday"], ["week", "In a week"], ["month", "End of month"]];
+  const waitingText = (t, now) => {
+    if (t.status !== "waiting" || !t.waitingSince) return "";
+    const n = diffDays(now, t.waitingSince);
+    return n <= 0 ? "Waiting since today" : `Waiting ${n} day${n === 1 ? "" : "s"}`;
+  };
   function step(s, recur) {
     switch (recur) {
       case "daily": return addDays(s, 1);
@@ -762,6 +832,7 @@ kbd { font-family: var(--f-mono); font-size: 12px; padding: 0 4px; border: 1px s
       created: Number(b.created) || 0,
       starter: !!b.starter,
       routine: String(b.routine || ""), // the routine this task was added from, if any
+      waitingSince: /^\d{4}-\d{2}-\d{2}$/.test(b.waitingSince || "") ? b.waitingSince : "", // set while status is "waiting"
       deletedAt: Number(b.deletedAt) || 0, // set while the task sits in the bin
     };
   }
@@ -1091,8 +1162,10 @@ kbd { font-family: var(--f-mono); font-size: 12px; padding: 0 4px; border: 1px s
     if (ui.view === "focus") items = items.filter(t => (t.due && t.due <= now) || t.status === "doing");
     if (ui.view === "week") items = items.filter(t => t.due && diffDays(t.due, now) <= 7);
     if (ui.view === "waiting") items = items.filter(t => t.status === "waiting");
+    // The Waiting view puts the longest wait first: that's who to chase.
+    const sorter = ui.view === "waiting" ? (a, b) => (a.waitingSince || "9999").localeCompare(b.waitingSince || "9999") || byDue(a, b) : byDue;
     const labels = { overdue: "Overdue", today: "Due today", week: "Next 7 days", later: "Later", nodate: "No due date" };
-    return Object.keys(labels).map(k => ({ key: k, label: labels[k], items: items.filter(t => dueBucket(t, now) === k).sort(byDue) }));
+    return Object.keys(labels).map(k => ({ key: k, label: labels[k], items: items.filter(t => dueBucket(t, now) === k).sort(sorter) }));
   }
   function stats(now) {
     const ws = weekStart(now);
@@ -1141,8 +1214,9 @@ kbd { font-family: var(--f-mono); font-size: 12px; padding: 0 4px; border: 1px s
       pname && `<span class="proj">${esc(pname)}</span>`,
       `<span class="code" title="${esc(cat.name)}">${cat.code}</span>`,
       ref && `<span class="ref">${esc(ref)}</span>`,
-      recurring && `<span>↻ ${RECUR[t.recur]}${t.history[0] ? ", last done " + esc(fmtShort(t.history[0])) : ""}</span>`,
+      recurring && `<span>↻ ${RECUR[t.recur]}${t.history.length ? `, done ${t.history.length}×, last ${esc(fmtShort(t.history[0]))}` : ""}</span>`,
       t.owner && `<span>Owner: ${esc(t.owner)}</span>`,
+      !done && waitingText(t, now) && `<span class="ref">${esc(waitingText(t, now))}</span>`,
       link ? `<a href="${esc(link)}" target="_blank" rel="noopener noreferrer">Evidence ↗</a>` : t.evidence && `<span>Evidence: ${esc(t.evidence)}</span>`,
     ].filter(Boolean).join("");
     const pills = [
@@ -1162,10 +1236,16 @@ kbd { font-family: var(--f-mono); font-size: 12px; padding: 0 4px; border: 1px s
         ${thumbsHTML(t)}
       </div>
       <div class="side">${sideDue}${pills ? `<span class="pills">${pills}</span>` : ""}<span class="row-acts">`
+        + (ro || done ? "" : moveSelect(t))
         + `<button type="button" class="btn ghost small" data-act="edit" aria-label="${ro ? "Open" : "Edit"} “${esc(t.title)}”">${ro ? "Open" : "Edit"}</button>`
         + (ro ? "" : `<button type="button" class="btn ghost small" data-act="delete" aria-label="Delete “${esc(t.title)}”">Delete</button>`)
         + `</span></div>
     </li>`;
+  }
+  function moveSelect(t) {
+    const opts = t.recur === "none" ? QUICK : [...QUICK, ["skip", "Skip this cycle"]];
+    return `<select class="move" id="mv-${esc(t.id)}" aria-label="Move “${esc(t.title)}” to"><option value="">Move to…</option>${
+      opts.map(([k, l]) => `<option value="${k}">${l}</option>`).join("")}</select>`;
   }
   function binHTML() {
     const all = binTasks(), items = all.filter(matches).sort((a, b) => b.deletedAt - a.deletedAt);
@@ -1324,6 +1404,7 @@ kbd { font-family: var(--f-mono); font-size: 12px; padding: 0 4px; border: 1px s
         : `<div class="acts"><button type="button" class="btn small ghost" data-pact="rename" data-id="${esc(p.id)}">Rename</button><button type="button" class="btn small ghost" data-pact="remove" data-id="${esc(p.id)}">Remove</button></div>`}</li>`;
     }).join("") : `<li class="proj-empty">No projects yet. Add the ones you're running, such as an ISO 27001 certification or a SOC 2 Type II audit.</li>`;
     $("#add-project").hidden = ro;
+    $("#imp-json").hidden = ro;
     if (hadFocus) { const el = $("#rename-input"); if (el) { el.focus(); el.setSelectionRange(el.value.length, el.value.length); } }
   }
   /* Routine library: each project keeps its own routines. "General" holds routines without a
@@ -1392,6 +1473,9 @@ kbd { font-family: var(--f-mono); font-size: 12px; padding: 0 4px; border: 1px s
     renderConfig();
     renderLibrary();
     renderSync();
+    // The browser tab shows what's overdue across every project.
+    const overdue = liveTasks().filter(t => t.status !== "done" && t.due && t.due < now).length;
+    document.title = (overdue ? `(${overdue}) ` : "") + "GRC Task Desk";
   }
 
   /* Actions */
@@ -1402,10 +1486,11 @@ kbd { font-family: var(--f-mono); font-size: 12px; padding: 0 4px; border: 1px s
     let next, msg;
     if (t.recur !== "none" && t.status !== "done") {
       const due = nextDue(t, now);
-      next = { ...prev, status: "todo", due, history: [now, ...t.history].slice(0, 12) };
+      // The log is the evidence that a control ran, so keep a long one: 400 covers a year of daily check-ins.
+      next = { ...prev, status: "todo", due, waitingSince: "", history: [now, ...t.history].slice(0, 400) };
       msg = `Logged. Next due ${fmtLong(due)}.`;
     } else if (t.status === "done") {
-      next = { ...prev, status: "todo", completedAt: "" };
+      next = { ...prev, status: "todo", completedAt: "", waitingSince: "" };
       msg = "Moved back to your open tasks.";
     } else {
       next = { ...prev, status: "done", completedAt: now };
@@ -1413,6 +1498,15 @@ kbd { font-family: var(--f-mono); font-size: 12px; padding: 0 4px; border: 1px s
     }
     save(id, next);
     toast(msg, () => save(id, prev));
+  }
+  function reschedule(id, key) {
+    const t = tasks.get(id);
+    if (!t || ro || t.deletedAt || t.status === "done") return;
+    const now = today(), prev = clean(t);
+    const due = key === "skip" ? nextDue(t, now) : quickDate(key, now);
+    if (!due || due === t.due) return;
+    save(id, { ...prev, due });
+    toast(key === "skip" ? `Skipped this cycle. Next due ${fmtLong(due)}.` : `Moved to ${fmtLong(due)}.`, () => save(id, prev));
   }
 
   /* Dialogs */
@@ -1475,7 +1569,10 @@ kbd { font-family: var(--f-mono); font-size: 12px; padding: 0 4px; border: 1px s
     showErrors(true, true);
     const hist = $("#ed-history");
     hist.hidden = !(cur && cur.history.length);
-    if (cur && cur.history.length) hist.innerHTML = `Logged: <span class="ref">${cur.history.slice(0, 8).map(h => esc(fmtShort(h))).join(", ")}</span>`;
+    if (cur && cur.history.length) {
+      const n = cur.history.length;
+      hist.innerHTML = `Logged ${n} time${n === 1 ? "" : "s"}: <span class="ref">${cur.history.slice(0, 8).map(h => esc(fmtShort(h))).join(", ")}${n > 8 ? ", …" : ""}</span>`;
+    }
     $("#ed-fields").disabled = ro;
     $("#ed-save").hidden = ro;
     $("#ed-delete").hidden = !cur || ro;
@@ -1555,6 +1652,7 @@ kbd { font-family: var(--f-mono); font-size: 12px; padding: 0 4px; border: 1px s
       owner: $("#f-owner").value.trim(),
       evidence: $("#f-evidence").value.trim(),
       completedAt: status === "done" ? (base.status === "done" && base.completedAt ? base.completedAt : today()) : "",
+      waitingSince: status === "waiting" ? (base.status === "waiting" && base.waitingSince ? base.waitingSince : today()) : "",
       starter: false,
       routine: ed.routine,
     };
@@ -1683,9 +1781,16 @@ kbd { font-family: var(--f-mono); font-size: 12px; padding: 0 4px; border: 1px s
     openEditor(null, title ? { title } : {});
   });
   $("#list").addEventListener("change", e => {
-    if (!e.target.classList.contains("check")) return;
     const row = e.target.closest(".task");
-    if (row) toggleDone(row.dataset.id);
+    if (!row) return;
+    if (e.target.classList.contains("check")) toggleDone(row.dataset.id);
+    else if (e.target.classList.contains("move") && e.target.value) reschedule(row.dataset.id, e.target.value);
+  });
+  $("#due-chips").addEventListener("click", e => {
+    const b = e.target.closest("[data-due]");
+    if (!b) return;
+    $("#f-due").value = quickDate(b.dataset.due, today());
+    showErrors($("#err-title").hidden, true);
   });
   $("#list").addEventListener("click", e => {
     const b = e.target.closest("[data-act]");
@@ -1908,6 +2013,114 @@ kbd { font-family: var(--f-mono); font-size: 12px; padding: 0 4px; border: 1px s
     if (e.target.id !== "rename-input") return;
     if (e.key === "Enter") { e.preventDefault(); saveRename(ui.renaming); }
     if (e.key === "Escape") { e.preventDefault(); ui.renaming = ""; renderConfig(); }
+  });
+
+  /* Status note: this week in plain text, for an email or chat message. */
+  const scopeLabel = () => ui.project === NO_PROJECT ? "Tasks with no project" : ui.project ? projectName(ui.project) : "All projects";
+  function buildStatusNote(now) {
+    const ws = weekStart(now), we = addDays(ws, 6);
+    const list = liveTasks().filter(inProject);
+    const tag = t => !ui.project && projectName(t.project) ? ` [${projectName(t.project)}]` : "";
+    const open = list.filter(t => t.status !== "done");
+    const section = (title, items, detail) => items.length
+      ? [`${title} (${items.length})`, ...items.map(t => `- ${t.title}${tag(t)}${detail(t)}`), ""] : [];
+    const lines = [
+      ...section("Completed this week", list.filter(t => t.status === "done" && t.completedAt >= ws).sort((a, b) => b.completedAt.localeCompare(a.completedAt)),
+        t => ` (${fmtShort(t.completedAt)})`),
+      ...section("Check-ins logged this week", open.filter(t => t.history.some(h => h >= ws)),
+        t => { const n = t.history.filter(h => h >= ws).length; return ` (${n}×, last ${fmtShort(t.history[0])})`; }),
+      ...section("In progress", open.filter(t => t.status === "doing").sort(byDue), t => t.due ? ` (due ${fmtShort(t.due)})` : ""),
+      ...section("Waiting on others", open.filter(t => t.status === "waiting").sort((a, b) => (a.waitingSince || "9999").localeCompare(b.waitingSince || "9999")),
+        t => { const w = waitingText(t, now).toLowerCase(); return t.owner || w ? ` (${[t.owner && "on " + t.owner, w].filter(Boolean).join(", ")})` : ""; }),
+      ...section("Overdue", open.filter(t => t.due && t.due < now).sort(byDue), t => ` (due ${fmtShort(t.due)}, ${diffDays(now, t.due)} day${diffDays(now, t.due) === 1 ? "" : "s"} overdue)`),
+      ...section("Due in the next 7 days", open.filter(t => t.due && t.due >= now && diffDays(t.due, now) <= 7).sort(byDue), t => ` (${fmtLong(t.due)})`),
+    ];
+    return `GRC status: week ${isoWeek(now)}, ${fmtShort(ws)} to ${fmtShort(we)}\n${scopeLabel()}\n\n${lines.length ? lines.join("\n").trim() : "Nothing to report this week."}\n`;
+  }
+  const noteDlg = $("#note-dlg");
+  closeOnBackdrop(noteDlg);
+  $("#note-open").addEventListener("click", () => {
+    const now = today();
+    $("#note-sub").textContent = `Week ${isoWeek(now)} · ${scopeLabel()}`;
+    $("#note-text").value = buildStatusNote(now);
+    openDialog(noteDlg);
+    $("#note-copy").focus();
+  });
+  $("#note-copy").addEventListener("click", async () => {
+    const ta = $("#note-text");
+    try { await navigator.clipboard.writeText(ta.value); toast("Copied. Paste it into your message."); }
+    catch (e) { ta.focus(); ta.select(); toast("Copy didn't work here. The text is selected, so press Ctrl+C or ⌘C."); }
+  });
+
+  /* Export and import. Downloads go through the claude.ai capability there, and a blob link elsewhere. */
+  async function saveFile(filename, text) {
+    if (env === "claude") {
+      let dl = null;
+      try { dl = await window.claude.use("downloads"); } catch (e) { /* absent */ }
+      if (!dl) { toast("Downloads aren't available in this view."); return; }
+      try { await dl.save({ filename, data: text }); toast(`Saved ${filename}.`); }
+      catch (e) { if (!e || e.code !== "declined") toast("The file wasn't saved."); }
+      return;
+    }
+    const url = URL.createObjectURL(new Blob([text], { type: filename.endsWith(".csv") ? "text/csv" : "application/json" }));
+    const a = document.createElement("a");
+    a.href = url; a.download = filename;
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 10000);
+    toast(`Downloading ${filename}.`);
+  }
+  function tasksCSV() {
+    const cols = ["Title", "Project", "Status", "Priority", "Due", "Repeats", "Area", "Framework", "Control", "Owner", "Evidence", "Notes",
+      "Completed", "Waiting since", "Times logged", "Last logged", "Pictures", "Created"];
+    const rows = liveTasks().sort(byDue).map(t => [t.title, projectName(t.project), STATUS[t.status], PRI[t.pri], t.due, RECUR[t.recur], CATS[t.cat].name,
+      t.fw, t.ctrl, t.owner, t.evidence, t.notes, t.completedAt, t.waitingSince, t.history.length, t.history[0] || "", t.images.length,
+      t.created ? iso(new Date(t.created)) : ""]);
+    // A cell starting with = + - @ would run as a formula in a spreadsheet; a leading quote stops that.
+    const cell = v => {
+      let s = String(v ?? "");
+      if (/^[=+\-@\t\r]/.test(s)) s = "'" + s;
+      return /[",\n\r]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+    };
+    return "﻿" + [cols, ...rows].map(r => r.map(cell).join(",")).join("\r\n") + "\r\n";
+  }
+  const exportAll = () => ({
+    app: "grc-task-desk", version: 1, exportedAt: new Date().toISOString(), host: env,
+    projects: [...projects.values()], routines: [...routines.values()], tasks: [...tasks.values()],
+  });
+  async function importFile(e) {
+    const f = e.target.files[0];
+    e.target.value = "";
+    if (!f || ro) return;
+    let data = null;
+    try { data = JSON.parse(await f.text()); } catch (err) { /* reported below */ }
+    if (!data || typeof data !== "object" || data.app !== "grc-task-desk") { toast("That file isn't a GRC Task Desk export."); return; }
+    const n = {};
+    for (const coll of ["projects", "routines", "tasks"]) {
+      const entries = [];
+      for (const x of Array.isArray(data[coll]) ? data[coll] : []) {
+        if (!x || typeof x !== "object" || typeof x.id !== "string" || !/^[A-Za-z0-9_-]{1,64}$/.test(x.id)) continue;
+        const body = clean(NORM[coll](x.id, x));
+        if (coll === "tasks") body.images = []; // pictures don't travel with the file
+        entries.push([x.id, body]);
+      }
+      n[coll] = entries.length;
+      putMany(coll, entries);
+    }
+    const plural = (k, w) => `${n[k]} ${w}${n[k] === 1 ? "" : "s"}`;
+    toast(`Imported ${plural("tasks", "task")}, ${plural("projects", "project")} and ${plural("routines", "routine")}.`);
+  }
+  $("#exp-csv").addEventListener("click", () => saveFile(`grc-tasks-${today()}.csv`, tasksCSV()));
+  $("#exp-json").addEventListener("click", () => saveFile(`grc-task-desk-${today()}.json`, JSON.stringify(exportAll(), null, 2)));
+  $("#imp-json").addEventListener("click", () => $("#imp-file").click());
+  $("#imp-file").addEventListener("change", importFile);
+
+  /* Keyboard shortcuts, outside text fields and dialogs: n for a new task, / to search. */
+  document.addEventListener("keydown", e => {
+    if (e.defaultPrevented || e.ctrlKey || e.metaKey || e.altKey || document.querySelector("dialog[open]")) return;
+    const el = e.target;
+    if (isTextField(el) || (el && (el.tagName === "SELECT" || el.isContentEditable))) return;
+    if (e.key === "n" && !ro) { e.preventDefault(); openEditor(null); }
+    else if (e.key === "/") { e.preventDefault(); $("#q").focus(); $("#q").select(); }
   });
 
   /* Roll the desk over at midnight without a reload. */

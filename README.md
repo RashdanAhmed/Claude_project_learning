@@ -10,7 +10,7 @@ A day-to-day task list for governance, risk and compliance work.
 | **claude.ai page**: https://claude.ai/artifact/He8zB2nNySD9ZLbnuKL2Xo | The artifact's database on claude.ai | Open the link while signed in. It's private until you share it. |
 | **Single file** [`grc-task-desk-standalone.html`](grc-task-desk-standalone.html) | Your browser's storage, on that computer only | Double-click the file |
 
-The three don't share data: each keeps its own tasks.
+The three don't share data automatically. To move between them, use **Export everything** and **Import** under Configuration → Data.
 
 ## What it does
 
