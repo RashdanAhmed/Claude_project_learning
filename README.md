@@ -24,7 +24,12 @@ The three don't share data automatically. To move between them, use **Export eve
 - **Recurring tasks** (daily, weekly, monthly, quarterly, annual): ticking one logs the cycle and moves it to the next due date.
 - **Routine libraries per project**: each project has its own library of routines you create, edit and delete, plus a General library for routines without a project. A routine holds a title, cadence, area, priority, framework, control reference, owner, evidence location and notes. **Add to desk** opens the task form filled in from the routine, so you only set the due date. **Save as routine** in the task form turns a task into a routine. **Copy standard check-ins** copies any of 26 standard GRC check-ins (mapped to ISO/IEC 27001:2022, SOC 2, NIST CSF 2.0, PCI DSS v4.0 and GDPR references) into a library as a starting point. Removing a project moves its routines to General.
 - **Task fields**: title, project, due date, notes, pictures, priority, cadence, status, area, framework, control reference, owner or stakeholder and evidence location.
-- **Backup** (app only): download tasks, projects and pictures as one zip file.
+- **Status note**: one click writes up the week in plain text (completed, check-ins logged, in progress, waiting on others, overdue, due in the next 7 days) for the project filter in use, ready to paste into an email or chat.
+- **Move to…** on each open task reschedules it to today, tomorrow, next Monday, in a week or end of month, with Undo; recurring tasks can also skip a cycle. The task form has the same quick picks plus end of quarter.
+- **Waiting tracker**: a task set to Waiting on others shows how long it has waited, and the Waiting view lists the longest wait first.
+- **Export and import** under Configuration → Data: tasks as CSV for a spreadsheet, and everything as JSON to move between the app, the claude.ai page and the single file (pictures don't travel with the file).
+- **Backup** (app only): download tasks, projects, routines and pictures as one zip file.
+- **Keyboard**: `n` opens a new task and `/` jumps to search. The browser tab shows the overdue count.
 
 ## Single file notes
 
